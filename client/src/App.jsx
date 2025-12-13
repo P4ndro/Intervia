@@ -66,7 +66,7 @@ export default function App() {
         }
       />
       <Route
-        path="/interview"
+        path="/interview/:id"
         element={
           <ProtectedRoute>
             <InterviewPage />
@@ -74,7 +74,7 @@ export default function App() {
         }
       />
       <Route
-        path="/report"
+        path="/report/:id"
         element={
           <ProtectedRoute>
             <ReportPage />

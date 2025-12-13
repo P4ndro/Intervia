@@ -1,11 +1,20 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api';
 
 export default function JobCard({ job }) {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleApply = () => {
-    // TODO: Navigate to interview or application page
-    navigate('/interview');
+  const handleApply = async () => {
+    try {
+      setLoading(true);
+      const data = await api.startInterview();
+      navigate(`/interview/${data.interviewId}`);
+    } catch (err) {
+      console.error('Failed to start interview:', err);
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,9 +41,10 @@ export default function JobCard({ job }) {
 
       <button
         onClick={handleApply}
-        className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+        disabled={loading}
+        className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
       >
-        Apply Now
+        {loading ? 'Starting...' : 'Apply Now'}
       </button>
     </div>
   );

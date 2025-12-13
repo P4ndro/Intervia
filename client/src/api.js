@@ -52,6 +52,9 @@ async function request(endpoint, options = {}) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  // Debug logging
+  console.log(`[API] ${options.method || 'GET'} ${endpoint}`, { hasToken: !!accessToken });
+
   let response = await fetch(url, config);
 
   // If 401, try to refresh and retry once
@@ -70,7 +73,17 @@ async function request(endpoint, options = {}) {
     }
   }
 
-  const data = await response.json();
+  // Handle empty responses
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    throw new Error('Invalid JSON response from server');
+  }
 
   if (!response.ok) {
     throw new Error(data.error || 'Request failed');
@@ -81,6 +94,7 @@ async function request(endpoint, options = {}) {
 
 // Auth API
 export const api = {
+  // Auth
   register: (email, password) =>
     request('/auth/register', {
       method: 'POST',
@@ -101,6 +115,28 @@ export const api = {
   me: () => request('/auth/me'),
 
   protected: () => request('/protected'),
+
+  // Interviews
+  startInterview: () =>
+    request('/interviews/start', { method: 'POST' }),
+
+  getInterview: (interviewId) =>
+    request(`/interviews/${interviewId}`),
+
+  submitAnswer: (interviewId, questionId, transcript, skipped = false) =>
+    request(`/interviews/${interviewId}/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ questionId, transcript, skipped }),
+    }),
+
+  completeInterview: (interviewId) =>
+    request(`/interviews/${interviewId}/complete`, { method: 'POST' }),
+
+  getReport: (interviewId) =>
+    request(`/interviews/${interviewId}/report`),
+
+  listInterviews: () =>
+    request('/interviews'),
 };
 
 export default api;

@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import protectedRoutes from './routes/protected.js';
+import interviewRoutes from './routes/interviews.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(cookieParser());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
+app.use('/api/interviews', interviewRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

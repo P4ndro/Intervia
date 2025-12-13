@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../authContext';
 import Navbar from '../components/Navbar';
 import JobCard from '../components/JobCard';
+import { api } from '../api';
 
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   // TODO: Get role from user object or context when backend is integrated
   const [userRole] = useState(localStorage.getItem('userRole') || 'candidate');
+  const [startingInterview, setStartingInterview] = useState(false);
+  const [error, setError] = useState('');
 
   // Mock job data - replace with actual API calls
   const jobs = [
@@ -52,12 +55,26 @@ export default function HomePage() {
           </div>
 
           <div className="mb-6">
-            <Link
-              to="/interview"
-              className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors"
+            <button
+              onClick={async () => {
+                try {
+                  setStartingInterview(true);
+                  setError('');
+                  const data = await api.startInterview();
+                  navigate(`/interview/${data.interviewId}`);
+                } catch (err) {
+                  setError(err.message || 'Failed to start interview');
+                  setStartingInterview(false);
+                }
+              }}
+              disabled={startingInterview}
+              className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             >
-              Start Interview
-            </Link>
+              {startingInterview ? 'Starting...' : 'Start Interview'}
+            </button>
+            {error && (
+              <p className="mt-2 text-red-400 text-sm">{error}</p>
+            )}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
