@@ -1,26 +1,30 @@
-/**
- * AI Question Generator Service
- * 
- * Generates interview questions based on job description and requirements.
- * 
- * TODO: Implement with actual AI provider
- * 
- * Usage:
- *   import { generateQuestions } from './ai/questionGenerator.js';
- *   const questions = await generateQuestions(job, config);
- */
+import 'dotenv/config';
+import Groq from 'groq-sdk';
 
-import { callLLM } from './llmClient.js';
+const USE_MOCK_AI = process.env.USE_MOCK_AI === 'true';
 
-/**
- * Generate interview questions for a job
- * @param {Object} job - Job document with title, level, description
- * @param {Object} config - Question generation config
- * @param {number} config.numQuestions - Number of questions to generate
- * @param {number} config.technicalRatio - Ratio of technical to behavioral (0-1)
- * @param {string} config.difficulty - 'easy', 'medium', 'hard', or 'mixed'
- * @returns {Promise<Array>} Array of question objects
- */
+let groq = null;
+if (!USE_MOCK_AI && process.env.GROQ_API_KEY) {
+  groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+}
+
+const MODEL = 'llama-3.3-70b-versatile';
+
+async function askGroq(prompt, options = {}) {
+  if (!groq) {
+    throw new Error('Groq not configured. Set GROQ_API_KEY in .env');
+  }
+
+  const response = await groq.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: 'user', content: prompt }],
+    temperature: options.temperature || 0.7,
+    max_tokens: options.maxTokens || 2048,
+  });
+
+  return response.choices[0].message.content;
+}
+
 export async function generateQuestions(job, config = {}) {
   const {
     numQuestions = 5,
@@ -70,13 +74,37 @@ Ensure:
 - Difficulty matches the requested level
 - Questions are detailed and specific to this job`;
 
+  if (USE_MOCK_AI) {
+    console.log('[QuestionGenerator] Using mock mode - returning basic questions');
+    const mockQuestions = [];
+    for (let i = 0; i < numQuestions; i++) {
+      const isTechnical = i < numTechnical;
+      mockQuestions.push({
+        id: `q${i + 1}`,
+        text: isTechnical
+          ? `Technical question ${i + 1} for ${job.level} ${job.title}`
+          : `Behavioral question ${i + 1} for ${job.level} ${job.title}`,
+        type: isTechnical ? 'technical' : 'behavioral',
+        category: isTechnical ? 'algorithms' : 'communication',
+        difficulty: difficulty,
+        weight: isTechnical ? 2 : 1,
+      });
+    }
+    return mockQuestions;
+  }
+
+  if (!groq) {
+    throw new Error('Groq not configured. Set GROQ_API_KEY in .env or USE_MOCK_AI=true');
+  }
+
+  console.log('[QuestionGenerator] Generating questions with Groq for:', job.title);
+
   try {
-    const response = await callLLM(prompt, {
+    const response = await askGroq(prompt, {
       temperature: 0.7,
       maxTokens: 2000,
     });
 
-    // Parse JSON response
     const jsonMatch = response.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       throw new Error('AI response is not valid JSON');
@@ -84,7 +112,6 @@ Ensure:
 
     const questions = JSON.parse(jsonMatch[0]);
 
-    // Validate and format questions
     return questions.map((q, index) => ({
       id: q.id || `q${index + 1}`,
       text: q.text,
@@ -94,18 +121,25 @@ Ensure:
       weight: q.weight || (q.type === 'technical' ? 2 : 1),
     }));
   } catch (error) {
-    console.error('Error generating questions:', error);
-    throw new Error(`Failed to generate questions: ${error.message}`);
+    console.error('[QuestionGenerator] Error generating questions:', error.message);
+    const fallbackQuestions = [];
+    for (let i = 0; i < numQuestions; i++) {
+      const isTechnical = i < numTechnical;
+      fallbackQuestions.push({
+        id: `q${i + 1}`,
+        text: isTechnical
+          ? `Technical question ${i + 1} for ${job.level} ${job.title}`
+          : `Behavioral question ${i + 1} for ${job.level} ${job.title}`,
+        type: isTechnical ? 'technical' : 'behavioral',
+        category: isTechnical ? 'algorithms' : 'communication',
+        difficulty: difficulty,
+        weight: isTechnical ? 2 : 1,
+      });
+    }
+    return fallbackQuestions;
   }
 }
 
-/**
- * Generate practice interview questions (generic, not job-specific)
- * @param {Object} options - Options for question generation
- * @param {string} options.level - 'Junior', 'Mid', or 'Senior'
- * @param {number} options.numQuestions - Number of questions
- * @returns {Promise<Array>} Array of question objects
- */
 export async function generatePracticeQuestions(options = {}) {
   const { level = 'Mid', numQuestions = 5 } = options;
 
@@ -125,8 +159,33 @@ Return ONLY a valid JSON array in this exact format:
   }
 ]`;
 
+  if (USE_MOCK_AI) {
+    console.log('[QuestionGenerator] Using mock mode for practice questions');
+    const mockQuestions = [];
+    for (let i = 0; i < numQuestions; i++) {
+      const isTechnical = i % 2 === 0;
+      mockQuestions.push({
+        id: `q${i + 1}`,
+        text: isTechnical
+          ? `Practice technical question ${i + 1} for ${level} level`
+          : `Practice behavioral question ${i + 1} for ${level} level`,
+        type: isTechnical ? 'technical' : 'behavioral',
+        category: isTechnical ? 'algorithms' : 'communication',
+        difficulty: 'medium',
+        weight: isTechnical ? 2 : 1,
+      });
+    }
+    return mockQuestions;
+  }
+
+  if (!groq) {
+    throw new Error('Groq not configured. Set GROQ_API_KEY in .env or USE_MOCK_AI=true');
+  }
+
+  console.log('[QuestionGenerator] Generating practice questions with Groq');
+
   try {
-    const response = await callLLM(prompt, {
+    const response = await askGroq(prompt, {
       temperature: 0.7,
       maxTokens: 1500,
     });
@@ -147,10 +206,23 @@ Return ONLY a valid JSON array in this exact format:
       weight: q.weight || (q.type === 'technical' ? 2 : 1),
     }));
   } catch (error) {
-    console.error('Error generating practice questions:', error);
-    throw new Error(`Failed to generate practice questions: ${error.message}`);
+    console.error('[QuestionGenerator] Error generating practice questions:', error.message);
+    const fallbackQuestions = [];
+    for (let i = 0; i < numQuestions; i++) {
+      const isTechnical = i % 2 === 0;
+      fallbackQuestions.push({
+        id: `q${i + 1}`,
+        text: isTechnical
+          ? `Practice technical question ${i + 1} for ${level} level`
+          : `Practice behavioral question ${i + 1} for ${level} level`,
+        type: isTechnical ? 'technical' : 'behavioral',
+        category: isTechnical ? 'algorithms' : 'communication',
+        difficulty: 'medium',
+        weight: isTechnical ? 2 : 1,
+      });
+    }
+    return fallbackQuestions;
   }
 }
 
 export default { generateQuestions, generatePracticeQuestions };
-

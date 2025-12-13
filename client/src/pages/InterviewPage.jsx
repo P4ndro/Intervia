@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Editor from '@monaco-editor/react';
 import Navbar from '../components/Navbar';
 import { api } from '../api';
 
@@ -111,6 +112,38 @@ export default function InterviewPage() {
   }, [questionIndex, questions, answers]);
 
   const currentQuestion = questions[questionIndex];
+  
+  // Check if current question is code-based and detect language
+  const isCodeQuestion = currentQuestion && (
+    currentQuestion.type === 'technical' ||
+    currentQuestion.category?.toLowerCase().includes('algorithm') ||
+    currentQuestion.category?.toLowerCase().includes('coding') ||
+    currentQuestion.category?.toLowerCase().includes('code') ||
+    (currentQuestion.text?.toLowerCase().includes('write') && currentQuestion.text?.toLowerCase().includes('code')) ||
+    currentQuestion.text?.toLowerCase().includes('implement') ||
+    currentQuestion.text?.toLowerCase().includes('function') ||
+    currentQuestion.text?.includes('```')
+  );
+  
+  // Detect programming language from question text
+  const detectLanguage = () => {
+    if (!currentQuestion?.text) return 'javascript';
+    const text = currentQuestion.text.toLowerCase();
+    if (text.includes('python')) return 'python';
+    if (text.includes('java') && !text.includes('javascript')) return 'java';
+    if (text.includes('c++') || text.includes('cpp')) return 'cpp';
+    if (text.includes('c#') || text.includes('csharp')) return 'csharp';
+    if (text.includes('typescript')) return 'typescript';
+    if (text.includes('go ') || text.includes('golang')) return 'go';
+    if (text.includes('rust')) return 'rust';
+    if (text.includes('ruby')) return 'ruby';
+    if (text.includes('php')) return 'php';
+    if (text.includes('swift')) return 'swift';
+    if (text.includes('kotlin')) return 'kotlin';
+    return 'javascript'; // Default to JavaScript
+  };
+  
+  const codeLanguage = isCodeQuestion ? detectLanguage() : 'javascript';
 
   // Free TTS: Speak question when it changes (browser Web Speech API - 100% free)
   useEffect(() => {
@@ -710,17 +743,52 @@ export default function InterviewPage() {
                   </div>
                 )} */}
               </div>
+              
+              {/* Code Editor for code-based questions */}
+              {isCodeQuestion ? (
+                <div className="border border-slate-600 rounded-md overflow-hidden">
+                  <div className="bg-slate-800 px-3 py-2 border-b border-slate-600 flex items-center justify-between">
+                    <span className="text-xs text-slate-400">
+                      Language: <span className="text-emerald-400 font-medium">{codeLanguage}</span>
+                    </span>
+                    <span className="text-xs text-slate-500">Code Editor</span>
+                  </div>
+                  <Editor
+                    height="400px"
+                    defaultLanguage={codeLanguage}
+                    language={codeLanguage}
+                    value={answer}
+                    onChange={(value) => setAnswer(value || '')}
+                    theme="vs-dark"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 2,
+                      wordWrap: 'on',
+                      readOnly: submitting,
+                      padding: { top: 10, bottom: 10 },
+                      suggestOnTriggerCharacters: true,
+                      quickSuggestions: true,
+                    }}
+                  />
+                </div>
+              ) : (
                 <textarea
-                value={answer}
-                onChange={(e) => {
-                  // When user types, update answer
-                  setAnswer(e.target.value);
-                }}
+                  value={answer}
+                  onChange={(e) => {
+                    // When user types, update answer
+                    setAnswer(e.target.value);
+                  }}
                   rows={8}
-                disabled={submitting}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:border-emerald-500 focus:ring-emerald-500 resize-none disabled:opacity-50"
-                placeholder="Type your answer here..."
-              />
+                  disabled={submitting}
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:border-emerald-500 focus:ring-emerald-500 resize-none disabled:opacity-50"
+                  placeholder="Type your answer here..."
+                />
+              )}
+              
               {/* STT status messages - DISABLED */}
               {/* {isRecording && !isRecovering && (
                 <p className="mt-2 text-xs text-red-400 flex items-center gap-1">
@@ -735,7 +803,9 @@ export default function InterviewPage() {
                 </p>
               )} */}
               <p className="mt-2 text-xs text-slate-500">
-                💡 Type your answer manually. The interviewer will speak the questions to you.
+                {isCodeQuestion 
+                  ? '💻 Write your code solution in the editor above. You can use JavaScript, Python, or any language syntax.'
+                  : '💡 Type your answer manually. The interviewer will speak the questions to you.'}
               </p>
             </div>
 

@@ -145,6 +145,9 @@ export const api = {
   // Users
   getMyStats: () =>
     request('/users/me/stats'),
+  
+  getProfile: () =>
+    request('/users/me/profile'),
 };
 
 export default api;
