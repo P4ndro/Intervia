@@ -45,6 +45,21 @@ const interviewSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  jobId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Job',
+    default: null,
+  },
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  interviewType: {
+    type: String,
+    enum: ['practice', 'application'],
+    default: 'practice',
+  },
   status: {
     type: String,
     enum: ['in_progress', 'completed'],

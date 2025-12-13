@@ -13,6 +13,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  role: {
+    type: String,
+    enum: ['candidate', 'company'],
+    default: 'candidate',
+    required: true,
+  },
+  companyName: {
+    type: String,
+    required: function() {
+      return this.role === 'company';
+    },
+  },
   createdAt: {
     type: Date,
     default: Date.now,

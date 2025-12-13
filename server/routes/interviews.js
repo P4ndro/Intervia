@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { Interview } from '../models/Interview.js';
+import { Job } from '../models/Job.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -210,11 +211,16 @@ function generateMockReport(interview) {
   };
 }
 
-// POST /api/interviews/start - Start a new interview
+// POST /api/interviews/start - Start a practice interview (no job)
 router.post('/start', requireAuth, async (req, res, next) => {
   try {
+    if (req.user.role === 'company') {
+      return res.status(403).json({ error: 'Companies cannot start practice interviews' });
+    }
+
     const interview = new Interview({
       userId: req.user._id,
+      interviewType: 'practice',
       status: 'in_progress',
       questions: MOCK_QUESTIONS,
       answers: [],
@@ -225,6 +231,61 @@ router.post('/start', requireAuth, async (req, res, next) => {
 
     res.status(201).json({
       interviewId: interview._id,
+      questions: interview.questions,
+      currentQuestionIndex: 0,
+      totalQuestions: interview.questions.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/interviews/apply/:jobId - Apply to a job (creates interview linked to job)
+router.post('/apply/:jobId', requireAuth, async (req, res, next) => {
+  try {
+    if (req.user.role === 'company') {
+      return res.status(403).json({ error: 'Companies cannot apply to jobs' });
+    }
+
+    const job = await Job.findById(req.params.jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    if (job.status !== 'active') {
+      return res.status(400).json({ error: 'Job is not accepting applications' });
+    }
+
+    // Check if user already applied to this job
+    const existingInterview = await Interview.findOne({
+      userId: req.user._id,
+      jobId: job._id,
+      status: { $in: ['in_progress', 'completed'] },
+    });
+
+    if (existingInterview) {
+      return res.status(400).json({ 
+        error: 'You have already applied to this job',
+        existingInterviewId: existingInterview._id,
+      });
+    }
+
+    const interview = new Interview({
+      userId: req.user._id,
+      jobId: job._id,
+      companyId: job.companyId,
+      interviewType: 'application',
+      status: 'in_progress',
+      questions: MOCK_QUESTIONS, // TODO: Replace with job-specific questions from AI
+      answers: [],
+      currentQuestionIndex: 0,
+    });
+
+    await interview.save();
+
+    res.status(201).json({
+      interviewId: interview._id,
+      jobTitle: job.title,
       questions: interview.questions,
       currentQuestionIndex: 0,
       totalQuestions: interview.questions.length,
