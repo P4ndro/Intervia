@@ -4,84 +4,53 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/users/me/stats - Get current user's interview statistics
+// GET /api/users/me/stats
 router.get('/me/stats', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const interviews = await Interview.find({ 
+      userId: req.user._id,
+      status: 'completed',
+    });
 
-    // Get all user's interviews
-    const interviews = await Interview.find({ userId })
-      .select('status createdAt completedAt report.overallScore')
-      .lean();
-
-    const completedInterviews = interviews.filter(i => i.status === 'completed');
+    const completedInterviews = interviews.length;
     
-    // Calculate average score
-    const scoresWithValues = completedInterviews
-      .filter(i => i.report?.overallScore !== undefined)
-      .map(i => i.report.overallScore);
-    
-    const averageScore = scoresWithValues.length > 0
-      ? Math.round(scoresWithValues.reduce((a, b) => a + b, 0) / scoresWithValues.length)
-      : null;
+    let totalScore = 0;
+    let scoreCount = 0;
+    let totalMinutes = 0;
 
-    // Calculate total practice time (sum of interview durations)
-    let totalPracticeMinutes = 0;
-    completedInterviews.forEach(interview => {
-      if (interview.createdAt && interview.completedAt) {
-        const duration = new Date(interview.completedAt) - new Date(interview.createdAt);
-        totalPracticeMinutes += Math.round(duration / 60000);
+    interviews.forEach(interview => {
+      if (interview.report?.overallScore !== undefined) {
+        totalScore += interview.report.overallScore;
+        scoreCount++;
+      }
+      
+      if (interview.completedAt && interview.createdAt) {
+        const minutes = Math.round((new Date(interview.completedAt) - new Date(interview.createdAt)) / 60000);
+        totalMinutes += minutes;
       }
     });
 
-    // Format practice time
-    let totalPracticeTime = '0m';
-    if (totalPracticeMinutes >= 60) {
-      const hours = Math.floor(totalPracticeMinutes / 60);
-      const mins = totalPracticeMinutes % 60;
-      totalPracticeTime = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    } else if (totalPracticeMinutes > 0) {
-      totalPracticeTime = `${totalPracticeMinutes}m`;
-    }
-
-    // Calculate best score
-    const bestScore = scoresWithValues.length > 0
-      ? Math.max(...scoresWithValues)
-      : null;
-
-    // Calculate improvement (compare first half to second half of completed interviews)
-    let improvement = null;
-    if (scoresWithValues.length >= 4) {
-      const midpoint = Math.floor(scoresWithValues.length / 2);
-      const firstHalf = scoresWithValues.slice(0, midpoint);
-      const secondHalf = scoresWithValues.slice(midpoint);
-      const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-      const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-      improvement = Math.round(secondAvg - firstAvg);
-    }
+    const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : null;
+    const totalPracticeTime = totalMinutes > 0 ? `${totalMinutes}m` : '0m';
 
     res.json({
-      completedInterviews: completedInterviews.length,
-      totalInterviews: interviews.length,
+      completedInterviews,
       averageScore,
-      bestScore,
       totalPracticeTime,
-      totalPracticeMinutes,
-      improvement, // positive = improving, negative = declining, null = not enough data
-      inProgressInterviews: interviews.filter(i => i.status === 'in_progress').length,
     });
   } catch (error) {
     next(error);
   }
 });
 
-// GET /api/users/me - Get current user profile (already exists in auth, but adding here for consistency)
+// GET /api/users/me
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     res.json({
       user: {
         id: req.user._id,
         email: req.user.email,
+        role: req.user.role || 'candidate',
         createdAt: req.user.createdAt,
       },
     });
@@ -91,5 +60,4 @@ router.get('/me', requireAuth, async (req, res, next) => {
 });
 
 export default router;
-
 

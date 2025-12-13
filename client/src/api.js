@@ -52,9 +52,6 @@ async function request(endpoint, options = {}) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  // Debug logging
-  console.log(`[API] ${options.method || 'GET'} ${endpoint}`, { hasToken: !!accessToken });
-
   let response = await fetch(url, config);
 
   // If 401, try to refresh and retry once
@@ -75,41 +72,32 @@ async function request(endpoint, options = {}) {
 
   // Handle empty responses
   const text = await response.text();
-  let data;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch (e) {
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
+      return null;
     }
-    throw new Error('Invalid JSON response from server');
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed');
+    throw new Error(data?.error || 'Request failed');
   }
 
   return data;
 }
 
-// API Methods
+// Auth API
 export const api = {
-  // ============================================
-  // AUTH
-  // ============================================
-  
-  // Register as candidate (default)
-  register: (email, password) =>
+  // Auth
+  register: (email, password, role = 'candidate', companyName = null) =>
     request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, role: 'candidate' }),
-    }),
-
-  // Register as company
-  registerCompany: (email, password, companyName) =>
-    request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, role: 'company', companyName }),
+      body: JSON.stringify({ email, password, role, companyName }),
     }),
 
   login: (email, password) =>
@@ -127,20 +115,23 @@ export const api = {
 
   protected: () => request('/protected'),
 
-  // ============================================
-  // CANDIDATE - INTERVIEWS
-  // ============================================
-  
-  // Start a practice interview (no job)
+  // Jobs
+  listJobs: () => request('/jobs'),
+
+  getJob: (id) => request(`/jobs/${id}`),
+
+  // Interviews
   startInterview: () =>
     request('/interviews/start', { method: 'POST' }),
 
-  // Apply to a job (start application interview)
   applyToJob: (jobId) =>
     request(`/interviews/apply/${jobId}`, { method: 'POST' }),
 
-  getInterview: (interviewId) =>
-    request(`/interviews/${interviewId}`),
+  getInterview: (id) =>
+    request(`/interviews/${id}`),
+
+  listInterviews: () =>
+    request('/interviews'),
 
   submitAnswer: (interviewId, questionId, transcript, skipped = false) =>
     request(`/interviews/${interviewId}/answer`, {
@@ -148,102 +139,53 @@ export const api = {
       body: JSON.stringify({ questionId, transcript, skipped }),
     }),
 
-  completeInterview: (interviewId) =>
-    request(`/interviews/${interviewId}/complete`, { method: 'POST' }),
+  completeInterview: (id) =>
+    request(`/interviews/${id}/complete`, { method: 'POST' }),
 
-  getReport: (interviewId) =>
-    request(`/interviews/${interviewId}/report`),
+  getReport: (id) =>
+    request(`/interviews/${id}/report`),
 
-  listInterviews: () =>
-    request('/interviews'),
-
-  // ============================================
-  // CANDIDATE - JOBS (browse)
-  // ============================================
-  
-  listJobs: () =>
-    request('/jobs'),
-
-  getJob: (jobId) =>
-    request(`/jobs/${jobId}`),
-
-  // ============================================
-  // CANDIDATE - USER STATS
-  // ============================================
-  
+  // User Stats
   getMyStats: () =>
     request('/users/me/stats'),
 
-  // ============================================
-  // COMPANY - JOBS MANAGEMENT
-  // ============================================
-  
-  // List company's own jobs
-  listMyJobs: () =>
+  // Company-specific APIs
+  listCompanyJobs: () =>
     request('/jobs/company/my-jobs'),
 
-  // Create a new job
-  createJob: (title, rawDescription, options = {}) =>
+  createJob: (jobData) =>
     request('/jobs', {
       method: 'POST',
-      body: JSON.stringify({
-        title,
-        rawDescription,
-        location: options.location,
-        locationType: options.locationType,
-        employmentType: options.employmentType,
-        department: options.department,
-        questionConfig: options.questionConfig,
-      }),
+      body: JSON.stringify(jobData),
     }),
 
-  // Update a job
-  updateJob: (jobId, updates) =>
-    request(`/jobs/${jobId}`, {
+  updateJob: (id, jobData) =>
+    request(`/jobs/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(updates),
+      body: JSON.stringify(jobData),
     }),
 
-  // Delete a job
-  deleteJob: (jobId) =>
-    request(`/jobs/${jobId}`, { method: 'DELETE' }),
+  deleteJob: (id) =>
+    request(`/jobs/${id}`, { method: 'DELETE' }),
 
-  // Generate AI questions for a job
-  generateJobQuestions: (jobId) =>
-    request(`/jobs/${jobId}/generate-questions`, { method: 'POST' }),
+  publishJob: (id) =>
+    request(`/jobs/${id}/publish`, { method: 'POST' }),
 
-  // Publish a job
-  publishJob: (jobId) =>
-    request(`/jobs/${jobId}/publish`, { method: 'POST' }),
+  generateJobQuestions: (id) =>
+    request(`/jobs/${id}/generate-questions`, { method: 'POST' }),
 
-  // Get questions for a job
-  getJobQuestions: (jobId) =>
-    request(`/jobs/${jobId}/questions`),
-
-  // ============================================
-  // COMPANY - APPLICANTS
-  // ============================================
-  
-  // Get all applications for company's jobs
-  getApplications: (filters = {}) => {
-    const params = new URLSearchParams();
-    if (filters.jobId) params.append('jobId', filters.jobId);
-    if (filters.status) params.append('status', filters.status);
-    const query = params.toString();
-    return request(`/interviews/company/applications${query ? `?${query}` : ''}`);
+  getCompanyApplications: (jobId = null) => {
+    const url = jobId
+      ? `/interviews/company/applications?jobId=${jobId}`
+      : '/interviews/company/applications';
+    return request(url);
   },
 
-  // Get applicants for a specific job
-  getJobApplicants: (jobId) =>
-    request(`/jobs/company/${jobId}/applicants`),
-
-  // Add notes/rating to an application
-  updateApplicationNotes: (interviewId, notes, rating) =>
+  updateCompanyNotes: (interviewId, notes, status) =>
     request(`/interviews/${interviewId}/company-notes`, {
       method: 'PATCH',
-      body: JSON.stringify({ notes, rating }),
+      body: JSON.stringify({ companyNotes: notes, companyStatus: status }),
     }),
 };
 
 export default api;
-
