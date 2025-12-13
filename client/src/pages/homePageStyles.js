@@ -213,14 +213,14 @@ export const homePageStyles = `
   }
 
   .widget-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 18px;
+    width: 108px;
+    height: 108px;
+    border-radius: 27px;
     background: #111827;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 29px;
+    font-size: 44px;
     color: white;
   }
 
