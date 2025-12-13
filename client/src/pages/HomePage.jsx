@@ -100,17 +100,16 @@ export default function HomePage() {
                 <i className="fas fa-comment-dots"></i>
                 <span>Feedback</span>
               </a>
-              <a
-                href="#"
+              <Link
+                to="/profile"
                 className={`nav-link ${activeNav === 'stats' ? 'active' : ''}`}
                 onClick={(e) => {
-                  e.preventDefault();
                   setActiveNav('stats');
                 }}
               >
                 <i className="fas fa-chart-bar"></i>
                 <span>Stats</span>
-              </a>
+              </Link>
               <a
                 href="#"
                 className={`nav-link ${activeNav === 'notes' ? 'active' : ''}`}
