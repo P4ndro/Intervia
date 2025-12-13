@@ -23,6 +23,12 @@ export default function InterviewPage() {
   // Free TTS Interviewer (browser-based, no API costs)
   const [isSpeaking, setIsSpeaking] = useState(false);
   const speechSynthesisRef = useRef(null);
+  
+  // STT (Speech-to-Text) - DISABLED for now (only TTS enabled)
+  const isRecording = false;
+  const recognitionSupported = false;
+  const interimTranscript = '';
+  const recognitionRef = useRef(null);
 
   // Fetch interview data on mount
   useEffect(() => {
@@ -88,6 +94,19 @@ export default function InterviewPage() {
     if (questions[questionIndex]) {
       const questionId = questions[questionIndex].id;
       setAnswer(answers[questionId] || '');
+      // Stop recording when question changes - DISABLED (STT is disabled)
+      // if (isRecording) {
+      //   setIsRecording(false);
+      // }
+      // Auto-start recording - DISABLED (STT is disabled)
+      // if (recognitionSupported && !answers[questionId]) {
+      //   const timer = setTimeout(() => {
+      //     if (!isRecording) {
+      //       startRecording();
+      //     }
+      //   }, 2000);
+      //   return () => clearTimeout(timer);
+      // }
     }
   }, [questionIndex, questions, answers]);
 
@@ -117,6 +136,208 @@ export default function InterviewPage() {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
   }, []);
+
+  // STT (Speech-to-Text) - DISABLED for now (only TTS enabled)
+  // Initialize Speech Recognition (STT) - COMMENTED OUT
+  useEffect(() => {
+    // STT disabled - only TTS (text-to-speech) is enabled
+    // Browser will speak questions to you, but you need to type answers manually
+    return () => {
+      // Cleanup - stop TTS on unmount
+      window.speechSynthesis.cancel();
+    };
+  }, []); // Only run once on mount
+  
+  /* COMMENTED OUT - STT INITIALIZATION
+  useEffect(() => {
+    // Check browser support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      setRecognitionSupported(true);
+      
+      // Initialize recognition
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true; // Keep listening continuously
+      recognition.interimResults = true; // Show interim results as you speak
+      recognition.lang = 'en-US'; // Language
+      recognition.maxAlternatives = 1; // Only get the best result
+      
+      // Handle results - converts your speech to text in real-time
+      recognition.onresult = (event) => {
+        let interimText = '';
+        let finalText = '';
+        
+        // Process all results from the current index
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            // Final transcript - this is confirmed speech, add to answer
+            finalText += transcript + ' ';
+          } else {
+            // Interim transcript - shows as you speak (real-time)
+            interimText += transcript;
+          }
+        }
+        
+        // Add final transcript to answer (permanent)
+        if (finalText.trim()) {
+          setAnswer(prev => {
+            // Avoid duplicates - check if this text is already at the end
+            const trimmed = finalText.trim();
+            if (prev.endsWith(trimmed)) {
+              return prev;
+            }
+            // Add with space if there's existing text
+            return prev + (prev && !prev.endsWith(' ') ? ' ' : '') + trimmed;
+          });
+          // Clear interim after adding final
+          setInterimTranscript('');
+        } else {
+          // Show interim transcript in real-time as you speak
+          setInterimTranscript(interimText);
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'no-speech') {
+          // No speech detected - this is normal, just continue
+          return;
+        } else if (event.error === 'network') {
+          // Network error - but don't give up immediately, try to recover
+          const isOnline = navigator.onLine;
+          if (!isOnline) {
+            setHasNetworkError(true);
+            setError('No internet connection detected. Speech recognition requires Wi-Fi or mobile data. Please connect to the internet.');
+            setIsRecording(false);
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.stop();
+              } catch (e) {}
+            }
+          } else {
+            // Online but network error - might be temporary, try to recover automatically
+            console.warn('Network error but browser says online - attempting automatic recovery');
+            setIsRecovering(true);
+            setError('Network issue detected. Attempting to reconnect...');
+            
+            // Don't stop immediately - try multiple times to recover
+            let retryCount = 0;
+            const maxRetries = 5; // Try up to 5 times
+            
+            const attemptRecovery = () => {
+              if (isRecording && recognitionRef.current && navigator.onLine && retryCount < maxRetries) {
+                retryCount++;
+                setTimeout(() => {
+                  if (isRecording && recognitionRef.current && navigator.onLine) {
+                    try {
+                      recognitionRef.current.start();
+                      // Success! Clear error and recovery state
+                      setError('');
+                      setHasNetworkError(false);
+                      setIsRecovering(false);
+                      console.log('Speech recognition recovered successfully');
+                    } catch (retryErr) {
+                      // If retry fails, try again
+                      if (retryCount < maxRetries) {
+                        setError(`Reconnecting... (attempt ${retryCount + 1}/${maxRetries})`);
+                        attemptRecovery();
+                      } else {
+                        // All retries failed - show error
+                        setHasNetworkError(true);
+                        setIsRecovering(false);
+                        setError('Network error: Unable to connect to speech recognition service after multiple attempts. Your connection may be slow or unstable. Please check your internet and try again, or type your answer manually.');
+                        setIsRecording(false);
+                      }
+                    }
+                  } else {
+                    setIsRecovering(false);
+                  }
+                }, 1500 * retryCount); // Increasing delay between retries (1.5s, 3s, 4.5s, etc.)
+              } else {
+                setIsRecovering(false);
+              }
+            };
+            
+            // Start recovery attempts
+            attemptRecovery();
+          }
+        } else if (event.error === 'audio-capture') {
+          setError('Microphone not accessible. Please check permissions.');
+          setIsRecording(false);
+        } else if (event.error === 'not-allowed') {
+          setError('Microphone permission denied. Please allow microphone access.');
+          setIsRecording(false);
+        } else if (event.error === 'aborted') {
+          // Recognition was aborted - this is normal when stopping
+          return;
+        } else {
+          setError(`Speech recognition error: ${event.error}. Please check your internet connection.`);
+          setIsRecording(false);
+        }
+      };
+      
+      recognition.onend = () => {
+        // CRITICAL: Recognition stops automatically after periods of silence
+        // We MUST restart it continuously to keep listening
+        // If we're still supposed to be recording, restart immediately
+        // But NOT if there was a network error (prevents infinite retry loop)
+        if (isRecording && !hasNetworkError && recognitionRef.current) {
+          // Use setTimeout to ensure recognition is fully stopped before restarting
+          setTimeout(() => {
+            if (isRecording && !hasNetworkError && recognitionRef.current) {
+              try {
+                // Restart to keep listening - this is essential for continuous recording
+                recognitionRef.current.start();
+              } catch (err) {
+                // If already starting (InvalidStateError), that's fine - it will work
+                // Only log real errors
+                if (err.name !== 'InvalidStateError') {
+                  console.error('Error restarting recognition:', err);
+                  // If it's a network error, stop trying
+                  if (err.message && err.message.includes('network')) {
+                    setHasNetworkError(true);
+                    setIsRecording(false);
+                  } else {
+                    // For other errors, try once more after a delay
+                    setTimeout(() => {
+                      if (isRecording && !hasNetworkError && recognitionRef.current) {
+                        try {
+                          recognitionRef.current.start();
+                        } catch (retryErr) {
+                          // If still failing, might be a real error
+                          if (retryErr.name !== 'InvalidStateError') {
+                            console.error('Retry failed:', retryErr);
+                          }
+                        }
+                      }
+                    }, 1000);
+                  }
+                }
+              }
+            }
+          }, 100); // Small delay to ensure clean restart
+        }
+      };
+      
+      recognitionRef.current = recognition;
+    } else {
+      setRecognitionSupported(false);
+      console.warn('Speech recognition not supported in this browser');
+    }
+    
+    // Cleanup
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []); // Only run once on mount
+  END OF COMMENTED OUT STT INITIALIZATION */
+
+  // Handle recording state changes - DISABLED (STT is disabled)
+  // useEffect(() => { ... }, [isRecording]);
 
   const speakQuestion = (text) => {
     // Cancel any ongoing speech
@@ -171,6 +392,15 @@ export default function InterviewPage() {
     setIsSpeaking(false);
   };
 
+  // STT Functions - DISABLED (only TTS enabled)
+  const startRecording = () => {
+    // STT disabled - please type your answer manually
+  };
+  
+  const stopRecording = () => {
+    // STT disabled
+  };
+
   const handleSubmitAnswer = async (skipped = false) => {
     if (!currentQuestion) return;
     
@@ -185,6 +415,8 @@ export default function InterviewPage() {
         skipped
       );
       
+      console.log('Submit answer result:', result); // Debug log
+      
       // Save answer locally
       if (!skipped) {
         setAnswers(prev => ({
@@ -193,20 +425,41 @@ export default function InterviewPage() {
         }));
       }
       
-      // Auto-complete: if backend says completed, go to report
-      if (result.completed) {
+      // Check if interview is completed
+      const isCompleted = result.completed || 
+                         (result.allAnswered && result.answersCount >= questions.length) ||
+                         (questionIndex === questions.length - 1 && result.answersCount >= questions.length);
+      
+      if (isCompleted) {
+        console.log('Interview completed, navigating to report...'); // Debug log
         // Stop webcam
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((track) => track.stop());
         }
-        navigate(`/report/${interviewId}`);
+        // Navigate to report immediately
+        navigate(`/report/${interviewId}`, { replace: true });
         return;
       }
       
-      // Move to next question
+      // Move to next question (only if not completed)
       if (questionIndex < questions.length - 1) {
         setQuestionIndex(questionIndex + 1);
         setAnswer('');
+      } else {
+        // We're on the last question but backend didn't mark as completed
+        // This shouldn't happen, but if it does, try to complete manually
+        console.warn('Last question answered but interview not marked as completed');
+        // Wait a moment and check again
+        setTimeout(async () => {
+          try {
+            const interviewData = await api.getInterview(interviewId);
+            if (interviewData.status === 'completed') {
+              navigate(`/report/${interviewId}`, { replace: true });
+            }
+          } catch (err) {
+            console.error('Error checking interview status:', err);
+          }
+        }, 500);
       }
     } catch (err) {
       setError(err.message || 'Failed to submit answer');
@@ -249,10 +502,10 @@ export default function InterviewPage() {
     try {
       setSubmitting(true);
       
-      // Stop webcam
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+    // Stop webcam
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
       
       // Complete interview
       await api.completeInterview(interviewId);
@@ -289,10 +542,10 @@ export default function InterviewPage() {
   }
 
   if (error && questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-900">
-        <Navbar />
-        <main className="max-w-7xl mx-auto px-6 py-8">
+  return (
+    <div className="min-h-screen bg-slate-900">
+      <Navbar />
+      <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700 text-center">
             <p className="text-red-400 mb-4">{error}</p>
             <button
@@ -311,7 +564,7 @@ export default function InterviewPage() {
     <div className="min-h-screen bg-slate-900">
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-2 gap-6">
           {/* AI Interviewer Panel (Free TTS) */}
           <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
             <div className="flex items-center justify-between mb-4">
@@ -373,43 +626,43 @@ export default function InterviewPage() {
             </div>
           </div>
 
-          {/* Webcam Video Panel */}
-          <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Video Feed</h2>
-              <button
-                onClick={toggleVideo}
-                className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
-              >
-                {videoEnabled ? 'Disable Video' : 'Enable Video'}
-              </button>
+            {/* Webcam Video Panel */}
+            <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-white">Video Feed</h2>
+                <button
+                  onClick={toggleVideo}
+                  className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                >
+                  {videoEnabled ? 'Disable Video' : 'Enable Video'}
+                </button>
+              </div>
+              <div className="bg-slate-900 rounded-lg overflow-hidden aspect-video border border-slate-700">
+                {videoEnabled ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-500">
+                    Video Disabled
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 p-3 bg-slate-900 rounded-md border border-slate-700">
+                <p className="text-sm text-slate-400">
+                  🔊 Audio: <span className="text-emerald-400">Active</span>
+                </p>
+              </div>
             </div>
-            <div className="bg-slate-900 rounded-lg overflow-hidden aspect-video border border-slate-700">
-              {videoEnabled ? (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-500">
-                  Video Disabled
-                </div>
-              )}
-            </div>
-            <div className="mt-4 p-3 bg-slate-900 rounded-md border border-slate-700">
-              <p className="text-sm text-slate-400">
-                🔊 Audio: <span className="text-emerald-400">Active</span>
-              </p>
-            </div>
-          </div>
 
-          {/* Question & Answer Panel */}
-          <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
+            {/* Question & Answer Panel */}
+            <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold text-white">
                   Question {questionIndex + 1}/{questions.length}
                 </h2>
@@ -420,45 +673,100 @@ export default function InterviewPage() {
                 }`}>
                   {currentQuestion?.type || 'behavioral'}
                 </span>
-              </div>
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700 mb-4">
+                </div>
+                <div className="bg-slate-900 rounded-md p-4 border border-slate-700 mb-4">
                 <p className="text-white text-lg">{currentQuestion?.text}</p>
               </div>
-            </div>
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm text-slate-400 mb-2">Your Answer</label>
-              <textarea
+              <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm text-slate-400">Your Answer</label>
+                {/* STT Recording UI - DISABLED for now */}
+                {/* {recognitionSupported && (
+                  <div className="flex items-center gap-2">
+                    {isRecording ? (
+                      <>
+                        <span className="text-xs px-2 py-1 bg-red-900/50 text-red-400 rounded flex items-center gap-1">
+                          <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+                          Recording...
+                        </span>
+                        <button
+                          onClick={stopRecording}
+                          className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                        >
+                          Stop
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={startRecording}
+                        disabled={submitting}
+                        className="text-xs px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded transition-colors flex items-center gap-1"
+                      >
+                        🎤 Start Recording
+                      </button>
+                    )}
+                  </div>
+                )} */}
+              </div>
+                <textarea
                 value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                rows={8}
+                onChange={(e) => {
+                  // When user types, update answer
+                  setAnswer(e.target.value);
+                }}
+                  rows={8}
                 disabled={submitting}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none disabled:opacity-50"
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:border-emerald-500 focus:ring-emerald-500 resize-none disabled:opacity-50"
                 placeholder="Type your answer here..."
               />
+              {/* STT status messages - DISABLED */}
+              {/* {isRecording && !isRecovering && (
+                <p className="mt-2 text-xs text-red-400 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+                  Listening... Speak your answer clearly.
+                </p>
+              )}
+              {isRecovering && (
+                <p className="mt-2 text-xs text-yellow-400 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                  Reconnecting to speech service... Please wait.
+                </p>
+              )} */}
+              <p className="mt-2 text-xs text-slate-500">
+                💡 Type your answer manually. The interviewer will speak the questions to you.
+              </p>
             </div>
 
-            {error && (
+            {/* Error display - only show non-STT errors */}
+            {error && !error.includes('network') && !error.includes('Network') && !error.includes('speech recognition') && !error.includes('microphone') && (
               <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-md">
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-red-400 text-sm mb-2">{error}</p>
+                <button
+                  onClick={() => setError('')}
+                  className="text-xs px-2 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded transition-colors mt-2"
+                >
+                  Dismiss
+                </button>
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button
+              <div className="flex gap-3">
+                <button
                 onClick={() => handleSubmitAnswer(false)}
                 disabled={!answer.trim() || submitting}
-                className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
-              >
+                  className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+                >
                 {submitting ? 'Submitting...' : 'Submit Answer'}
-              </button>
-              <button
-                onClick={handleSkipQuestion}
+                </button>
+                <button
+                  onClick={handleSkipQuestion}
                 disabled={submitting}
                 className="px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-medium rounded-md transition-colors disabled:opacity-50"
-              >
-                Skip
-              </button>
+                >
+                  Skip
+                </button>
             </div>
 
             {/* Navigation buttons */}
@@ -470,24 +778,24 @@ export default function InterviewPage() {
               >
                 ← Previous
               </button>
-              <button
-                onClick={handleNextQuestion}
+                <button
+                  onClick={handleNextQuestion}
                 disabled={questionIndex >= questions.length - 1 || submitting}
                 className="flex-1 px-4 py-2 border border-slate-600 hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 hover:text-white font-medium rounded-md transition-colors"
-              >
+                >
                 Next →
-              </button>
-            </div>
+                </button>
+              </div>
 
-            <button
-              onClick={handleEndInterview}
+              <button
+                onClick={handleEndInterview}
               disabled={submitting}
               className="w-full mt-4 px-4 py-2 border border-red-600 hover:border-red-500 text-red-400 hover:text-red-300 font-medium rounded-md transition-colors disabled:opacity-50"
-            >
+              >
               {submitting ? 'Finishing...' : 'End Interview'}
-            </button>
+              </button>
+            </div>
           </div>
-        </div>
       </main>
     </div>
   );
