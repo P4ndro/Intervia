@@ -6,9 +6,9 @@ An AI-powered mock interview platform that helps candidates prepare for job inte
 
 Santa Claude is a productivity tool designed to:
 - **For Candidates**: Practice realistic job interviews and receive constructive feedback
-- **For Companies** (future): Pre-screen applicants before human interviews
+- **For Companies**: Post jobs, review applicant interviews, and analyze candidate performance
 
-Current focus: **Candidate-side MVP**
+Current status: **MVP Complete** - Both candidate and company features are functional
 
 ---
 
@@ -45,7 +45,7 @@ An interview is a stored session consisting of:
 
 **Interview Types:**
 - **Practice interviews** — Private, for self-improvement
-- **Application interviews** — (Future) Shared with companies
+- **Application interviews** — Shared with companies when applying to jobs
 
 ---
 
@@ -57,7 +57,7 @@ An interview is a stored session consisting of:
 | Backend | Node.js + Express |
 | Database | MongoDB + Mongoose |
 | Auth | JWT (access + refresh tokens) |
-| AI | Provider-agnostic abstraction layer |
+| AI | Groq (Llama 3.3) with mock mode fallback |
 
 ---
 
@@ -106,6 +106,7 @@ JWT_REFRESH_SECRET=your-refresh-secret
 CLIENT_ORIGIN=http://localhost:5173
 PORT=3000
 USE_MOCK_AI=true
+GROQ_API_KEY=your-groq-api-key-optional
 ```
 
 Create `client/.env`:
@@ -153,12 +154,12 @@ server/ai/llmClient.js
 - Mock mode via `USE_MOCK_AI=true`
 - Easy to swap: OpenAI, Claude, Gemini, etc.
 
-### AI Use Cases (planned)
-- Question generation
-- Answer evaluation
-- Report generation
+### AI Use Cases (Implemented)
+- ✅ Question generation (job-specific and practice)
+- ✅ Answer evaluation (relevance, clarity, depth, technical accuracy)
+- ✅ Report generation (comprehensive feedback with scores)
 
-For MVP, AI returns deterministic mock responses.
+AI can run in mock mode (`USE_MOCK_AI=true`) or with real AI provider (Groq).
 
 ---
 
@@ -211,40 +212,65 @@ For MVP, AI returns deterministic mock responses.
 
 ## MVP Success Criteria
 
+### Candidate Features
 - [x] User can register/login
-- [ ] User can start an interview
-- [ ] User can answer multiple questions
-- [ ] User can see a stored report
-- [ ] User can return to Home and revisit past reports
-- [ ] All data persists after page refresh
+- [x] User can start a practice interview
+- [x] User can apply to company jobs
+- [x] User can answer multiple questions
+- [x] User can see a stored report
+- [x] User can return to Home and revisit past reports
+- [x] All data persists after page refresh
+
+### Company Features
+- [x] Company can register with company name
+- [x] Company can create, update, and delete jobs
+- [x] Company can view applicants for their jobs
+- [x] Company can view interview reports for applicants
+- [x] Company dashboard with statistics
 
 ---
 
 ## API Documentation
 
-See [docs/api-contract.md](docs/api-contract.md) for full API specification.
+See [server/API_ENDPOINTS.md](server/API_ENDPOINTS.md) for complete API documentation.
 
 ### Current Endpoints
 
+#### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/register` | Register (candidate or company) |
 | POST | `/api/auth/login` | Login |
 | POST | `/api/auth/logout` | Logout |
 | POST | `/api/auth/refresh` | Refresh token |
 | GET | `/api/auth/me` | Get current user |
-| GET | `/api/health` | Health check |
 
-### Planned Endpoints
-
+#### Interviews
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/interviews` | Start new interview |
+| POST | `/api/interviews/start` | Start practice interview |
+| POST | `/api/interviews/apply/:jobId` | Apply to job |
 | GET | `/api/interviews` | List user's interviews |
 | GET | `/api/interviews/:id` | Get interview details |
 | POST | `/api/interviews/:id/answer` | Submit answer |
 | POST | `/api/interviews/:id/complete` | Complete interview |
 | GET | `/api/interviews/:id/report` | Get report |
+
+#### Jobs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/jobs` | List all active jobs (public) |
+| GET | `/api/jobs/:id` | Get job details |
+| POST | `/api/jobs` | Create job (company only) |
+| PATCH | `/api/jobs/:id` | Update job (company only) |
+| DELETE | `/api/jobs/:id` | Delete job (company only) |
+| GET | `/api/jobs/:id/applicants` | Get applicants (company only) |
+
+#### User Stats
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users/me/stats` | Get user statistics |
+| GET | `/api/users/me/profile` | Get user profile |
 
 ---
 
@@ -253,10 +279,18 @@ See [docs/api-contract.md](docs/api-contract.md) for full API specification.
 | Phase | Status |
 |-------|--------|
 | Auth scaffold | ✅ Complete |
-| Frontend pages (UI-only) | ✅ Complete |
-| API contract | ✅ Complete |
-| Interview endpoints | 🔄 Next |
-| Mock evaluation | 🔄 Next |
-| AI integration | ⏳ Later |
-| Company features | ⏳ Later |
+| Frontend pages | ✅ Complete |
+| API endpoints | ✅ Complete |
+| Interview flow | ✅ Complete |
+| AI integration | ✅ Complete |
+| Company features | ✅ Complete |
+| Job management | ✅ Complete |
+| Report generation | ✅ Complete |
+
+## Next Steps
+
+- Enhanced analytics dashboard
+- Profile editing for candidates
+- Interview trends visualization
+- Email notifications
 
