@@ -19,6 +19,10 @@ export default function InterviewPage() {
   const [videoEnabled, setVideoEnabled] = useState(true);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  
+  // Free TTS Interviewer (browser-based, no API costs)
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechSynthesisRef = useRef(null);
 
   // Fetch interview data on mount
   useEffect(() => {
@@ -88,6 +92,84 @@ export default function InterviewPage() {
   }, [questionIndex, questions, answers]);
 
   const currentQuestion = questions[questionIndex];
+
+  // Free TTS: Speak question when it changes (browser Web Speech API - 100% free)
+  useEffect(() => {
+    if (currentQuestion?.text && !loading) {
+      speakQuestion(currentQuestion.text);
+    }
+
+    // Cleanup: stop speaking when component unmounts or question changes
+    return () => {
+      if (speechSynthesisRef.current) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [currentQuestion, loading]);
+
+  // Load voices (some browsers need this)
+  useEffect(() => {
+    const loadVoices = () => {
+      window.speechSynthesis.getVoices();
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  const speakQuestion = (text) => {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Check if browser supports speech synthesis
+    if (!('speechSynthesis' in window)) {
+      console.warn('Browser does not support speech synthesis');
+      return;
+    }
+
+    // Create speech utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure voice (use system default or find a good one)
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.name.includes('Female') || 
+      voice.name.includes('Zira') || 
+      voice.name.includes('Samantha') ||
+      voice.name.includes('Karen')
+    ) || voices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Handle events
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (error) => {
+      console.error('Speech synthesis error:', error);
+      setIsSpeaking(false);
+    };
+
+    // Start speaking
+    window.speechSynthesis.speak(utterance);
+    speechSynthesisRef.current = utterance;
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
 
   const handleSubmitAnswer = async (skipped = false) => {
     if (!currentQuestion) return;
@@ -230,6 +312,67 @@ export default function InterviewPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-2 gap-6">
+          {/* AI Interviewer Panel (Free TTS) */}
+          <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Your Interviewer</h2>
+              {isSpeaking && (
+                <span className="text-xs px-2 py-1 bg-emerald-900/50 text-emerald-400 rounded">
+                  🔊 Speaking
+                </span>
+              )}
+            </div>
+            
+            {/* Interviewer Avatar */}
+            <div className={`relative bg-gradient-to-br from-emerald-900 to-blue-900 rounded-lg overflow-hidden aspect-video border-2 transition-all ${
+              isSpeaking ? 'border-emerald-500 ring-2 ring-emerald-500' : 'border-slate-700'
+            }`}>
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className={`w-24 h-24 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center transition-transform ${
+                    isSpeaking ? 'scale-110' : 'scale-100'
+                  }`}>
+                    <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                  <p className="text-white text-sm font-medium">AI Interviewer</p>
+                </div>
+              </div>
+              
+              {/* Speaking animation */}
+              {isSpeaking && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-8 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-6 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-8 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-2 h-6 bg-emerald-400 rounded-full animate-pulse" style={{ animationDelay: '450ms' }}></div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => speakQuestion(currentQuestion?.text || '')}
+                disabled={isSpeaking}
+                className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-md text-white text-sm font-medium transition"
+              >
+                {isSpeaking ? '🔊 Speaking...' : '🔊 Replay Question'}
+              </button>
+              {isSpeaking && (
+                <button
+                  onClick={stopSpeaking}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white text-sm font-medium transition"
+                >
+                  ⏹ Stop
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Webcam Video Panel */}
           <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700">
             <div className="flex items-center justify-between mb-4">
