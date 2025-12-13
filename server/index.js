@@ -7,6 +7,8 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import protectedRoutes from './routes/protected.js';
 import interviewRoutes from './routes/interviews.js';
+import jobRoutes from './routes/jobs.js';
+import userRoutes from './routes/users.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -29,6 +31,8 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/interviews', interviewRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

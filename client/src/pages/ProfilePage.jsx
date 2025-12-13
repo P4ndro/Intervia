@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../authContext';
 import Navbar from '../components/Navbar';
+import { api } from '../api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -19,17 +20,38 @@ export default function ProfilePage() {
     jobsPosted: 0,
   });
 
-  // Mock data - replace with actual API calls
+  // Stats from API
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch stats on mount
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const data = await api.getMyStats();
+        setStats(data);
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+    
+    fetchStats();
+  }, []);
+
+  // Use API stats or fallback
   const candidateStats = {
-    completedInterviews: 5,
-    averageScore: 78,
-    totalPracticeTime: '2h 30m',
+    completedInterviews: stats?.completedInterviews ?? 0,
+    averageScore: stats?.averageScore ?? 0,
+    totalPracticeTime: stats?.totalPracticeTime ?? '0m',
   };
 
+  // Mock org stats for now (org features are future)
   const organizationStats = {
-    jobsPosted: 12,
-    totalApplicants: 45,
-    interviewsCompleted: 38,
+    jobsPosted: 0,
+    totalApplicants: 0,
+    interviewsCompleted: 0,
   };
 
   const handleSave = async () => {
@@ -76,15 +98,21 @@ export default function ProfilePage() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
                 <p className="text-slate-400 text-sm mb-1">Completed Interviews</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.completedInterviews}</p>
+                <p className="text-2xl font-bold text-white">
+                  {loadingStats ? '...' : candidateStats.completedInterviews}
+                </p>
               </div>
               <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
                 <p className="text-slate-400 text-sm mb-1">Average Score</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.averageScore}%</p>
+                <p className="text-2xl font-bold text-white">
+                  {loadingStats ? '...' : (candidateStats.averageScore ? `${candidateStats.averageScore}%` : 'N/A')}
+                </p>
               </div>
               <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
                 <p className="text-slate-400 text-sm mb-1">Practice Time</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.totalPracticeTime}</p>
+                <p className="text-2xl font-bold text-white">
+                  {loadingStats ? '...' : candidateStats.totalPracticeTime}
+                </p>
               </div>
             </div>
 

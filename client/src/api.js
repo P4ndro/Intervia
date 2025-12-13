@@ -137,6 +137,17 @@ export const api = {
 
   listInterviews: () =>
     request('/interviews'),
+
+  // Jobs
+  listJobs: () =>
+    request('/jobs'),
+
+  getJob: (jobId) =>
+    request(`/jobs/${jobId}`),
+
+  // User stats
+  getMyStats: () =>
+    request('/users/me/stats'),
 };
 
 export default api;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../authContext';
 import Navbar from '../components/Navbar';
@@ -13,33 +13,29 @@ export default function HomePage() {
   const [startingInterview, setStartingInterview] = useState(false);
   const [error, setError] = useState('');
 
-  // Mock job data - replace with actual API calls
-  const jobs = [
-    {
-      id: 1,
-      title: 'Software Engineer',
-      company: 'Tech Corp',
-      location: 'Remote',
-      type: 'Full-time',
-      posted: '2 days ago',
-    },
-    {
-      id: 2,
-      title: 'Frontend Developer',
-      company: 'StartupXYZ',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      posted: '5 days ago',
-    },
-    {
-      id: 3,
-      title: 'Backend Engineer',
-      company: 'Cloud Services Inc',
-      location: 'New York, NY',
-      type: 'Contract',
-      posted: '1 week ago',
-    },
-  ];
+  // Jobs from API
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
+  // Fetch jobs on mount
+  useEffect(() => {
+    async function fetchJobs() {
+      try {
+        const data = await api.listJobs();
+        setJobs(data.jobs || []);
+      } catch (err) {
+        console.error('Failed to load jobs:', err);
+      } finally {
+        setLoadingJobs(false);
+      }
+    }
+    
+    if (userRole === 'candidate') {
+      fetchJobs();
+    } else {
+      setLoadingJobs(false);
+    }
+  }, [userRole]);
 
   // Candidate View
   if (userRole === 'candidate') {
@@ -77,16 +73,24 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-
-          {jobs.length === 0 && (
+          {loadingJobs ? (
             <div className="text-center py-12">
-              <p className="text-slate-400">No jobs available at the moment.</p>
+              <p className="text-slate-400">Loading jobs...</p>
             </div>
+          ) : (
+            <>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {jobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+
+              {jobs.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-slate-400">No jobs available at the moment.</p>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
