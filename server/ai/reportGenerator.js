@@ -255,7 +255,7 @@ aiConfidence RULE:
 
     const metrics = computeMetrics(questions, answers);
 
-    // Enforce computed scores (AI can’t override)
+    // Enforce computed scores (AI can't override)
     const normalized = {
       overallScore: computed.overallScore,
       technicalScore: computed.technicalScore,

@@ -51,27 +51,44 @@ export default function ProfilePage() {
     interviewsCompleted: 0,
   });
 
+  const [reports, setReports] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(true);
 
-  // Fetch stats from API
+  // Fetch profile data (includes stats and reports)
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchProfile() {
       try {
         setLoadingStats(true);
-        const data = await api.getMyStats();
+        setLoadingReports(true);
+        const profileData = await api.getProfile();
+        
         if (userRole === 'candidate') {
-          setCandidateStats(data);
+          setCandidateStats(profileData.stats);
+          setReports(profileData.reports || []);
         } else {
-          setOrganizationStats(data);
+          setOrganizationStats(profileData.stats);
         }
       } catch (err) {
-        console.error('Failed to load stats:', err);
+        console.error('Failed to load profile:', err);
+        // Fallback to stats only
+        try {
+          const statsData = await api.getMyStats();
+          if (userRole === 'candidate') {
+            setCandidateStats(statsData);
+          } else {
+            setOrganizationStats(statsData);
+          }
+        } catch (statsErr) {
+          console.error('Failed to load stats:', statsErr);
+        }
       } finally {
         setLoadingStats(false);
+        setLoadingReports(false);
       }
     }
 
-    fetchStats();
+    fetchProfile();
   }, [userRole]);
 
   const handleSave = async () => {
@@ -210,6 +227,138 @@ export default function ProfilePage() {
                 <p className="text-white">{formData.experience || 'No experience listed'}</p>
               )}
             </div>
+          </div>
+
+          {/* Interview Reports Section */}
+          <div className="mt-8 pt-8 border-t border-slate-700">
+            <h2 className="text-2xl font-bold text-white mb-6">Interview Reports</h2>
+            
+            {loadingReports ? (
+              <div className="text-center py-8">
+                <p className="text-slate-400">Loading reports...</p>
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-8 bg-slate-900 rounded-lg border border-slate-700">
+                <p className="text-slate-400 mb-2">No completed interviews yet</p>
+                <p className="text-slate-500 text-sm">Complete an interview to see your reports here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reports.map((report) => (
+                  <div
+                    key={report.interviewId}
+                    className="bg-slate-900 rounded-lg p-6 border border-slate-700 hover:border-emerald-600 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/report/${report.interviewId}`)}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-1">
+                          {report.jobTitle || 'Practice Interview'}
+                        </h3>
+                        <div className="flex items-center gap-3 text-sm text-slate-400">
+                          {report.jobLevel && (
+                            <span className="px-2 py-1 bg-slate-800 rounded text-slate-300">
+                              {report.jobLevel}
+                            </span>
+                          )}
+                          <span>
+                            {report.interviewType === 'practice' ? 'Practice' : 'Application'}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            {new Date(report.completedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      {report.report && (
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white mb-1">
+                            {report.report.overallScore || 0}%
+                          </div>
+                          <div className={`text-xs px-2 py-1 rounded ${
+                            report.report.readinessBand === 'Ready'
+                              ? 'bg-emerald-900/50 text-emerald-400'
+                              : report.report.readinessBand === 'Almost Ready'
+                              ? 'bg-yellow-900/50 text-yellow-400'
+                              : 'bg-red-900/50 text-red-400'
+                          }`}>
+                            {report.report.readinessBand || 'Not Ready'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {report.report && (
+                      <div className="mt-4 pt-4 border-t border-slate-700">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          {report.report.technicalScore !== null && report.report.technicalScore !== undefined && (
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">Technical</p>
+                              <p className="text-lg font-semibold text-white">{report.report.technicalScore}%</p>
+                            </div>
+                          )}
+                          {report.report.behavioralScore !== null && report.report.behavioralScore !== undefined && (
+                            <div>
+                              <p className="text-xs text-slate-500 mb-1">Behavioral</p>
+                              <p className="text-lg font-semibold text-white">{report.report.behavioralScore}%</p>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs text-slate-500 mb-1">Questions</p>
+                            <p className="text-lg font-semibold text-white">{report.questionsCount}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500 mb-1">Answered</p>
+                            <p className="text-lg font-semibold text-white">{report.answersCount}</p>
+                          </div>
+                        </div>
+                        
+                        {report.report.summary && (
+                          <p className="text-sm text-slate-300 line-clamp-2 mb-3">
+                            {report.report.summary}
+                          </p>
+                        )}
+                        
+                        {report.report.primaryBlockers && report.report.primaryBlockers.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {report.report.primaryBlockers.slice(0, 3).map((blocker, idx) => (
+                              <span
+                                key={idx}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  blocker.severity === 'high'
+                                    ? 'bg-red-900/30 text-red-400 border border-red-800'
+                                    : blocker.severity === 'medium'
+                                    ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800'
+                                    : 'bg-blue-900/30 text-blue-400 border border-blue-800'
+                                }`}
+                              >
+                                {blocker.issue}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="mt-4 pt-4 border-t border-slate-700">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/report/${report.interviewId}`);
+                        }}
+                        className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
+                      >
+                        View Full Report →
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

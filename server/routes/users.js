@@ -23,7 +23,10 @@ router.get('/me/profile', requireAuth, async (req, res, next) => {
       const completedInterviews = await Interview.find({
         userId: userId,
         status: 'completed',
-      });
+      })
+        .populate('jobId', 'title level')
+        .sort({ completedAt: -1 }) // Most recent first
+        .lean();
 
       const totalInterviews = completedInterviews.length;
       
@@ -41,6 +44,19 @@ router.get('/me/profile', requireAuth, async (req, res, next) => {
       // Calculate total practice time
       const totalPracticeTime = `${Math.floor(totalInterviews * 0.5)}h ${(totalInterviews * 30) % 60}m`;
 
+      // Format reports for frontend (full reports with all details)
+      const reports = completedInterviews.map(interview => ({
+        interviewId: interview._id,
+        interviewType: interview.interviewType,
+        jobTitle: interview.jobId ? interview.jobId.title : null,
+        jobLevel: interview.jobId ? interview.jobId.level : null,
+        completedAt: interview.completedAt,
+        createdAt: interview.createdAt,
+        report: interview.report, // Full report object
+        questionsCount: interview.questions?.length || 0,
+        answersCount: interview.answers?.length || 0,
+      }));
+
       res.json({
         profile: {
           id: user._id,
@@ -53,6 +69,7 @@ router.get('/me/profile', requireAuth, async (req, res, next) => {
           averageScore: averageScore,
           totalPracticeTime: totalPracticeTime,
         },
+        reports: reports, // Full reports array
       });
     } else {
       // Company profile

@@ -3,27 +3,23 @@ import { Interview } from '../models/Interview.js';
 import { Job } from '../models/Job.js';
 import { requireAuth } from '../middleware/auth.js';
 
-import {generateQuestions, generatePracticeQuestions} from '../ai/questionGenerator.js';
+import { generateQuestions, generatePracticeQuestions } from '../ai/questionGenerator.js';
 import { evaluateAnswer, evaluateAnswers } from '../ai/answerEvaluator.js';
 import { generateReport } from '../ai/reportGenerator.js';
 
-
 const router = Router();
 
-
-//function to map ai questions to mock questions
-function mapQuestionsToMockFormat(questions){
+// Helper function to map AI questions to interview format
+function mapQuestionsToInterviewFormat(questions) {
   return questions.map(q => ({
-    id : q.id,
+    id: q.id,
     text: q.text,
     type: q.type,
-    weight:q.weight,
-    category: q.category,
-    difficulty: q.difficulty,
+    category: q.category || 'general',
+    difficulty: q.difficulty || 'medium',
+    weight: q.weight || (q.type === 'technical' ? 2 : 1),
   }));
 }
-
-// Mock questions for MVP - replace with AI-generated questions later
 
 // Generate report with WEIGHTED scoring based on question types
 /**
@@ -269,18 +265,22 @@ router.post('/start', requireAuth, async (req, res, next) => {
         level: 'Mid', // or get from req.body.level if provided
         numQuestions: 5 
       });
-      questions = mapQuestionsToMockFormat(aiQuestions);
+      questions = mapQuestionsToInterviewFormat(aiQuestions);
     } catch (error) {
-      console.error('Error generating practice questions:', error);
-      // Fallback to MOCK_QUESTIONS if AI fails
-      questions = MOCK_QUESTIONS;
+      console.error('[Interviews] Error generating practice questions:', error.message);
+      // Fallback to basic questions if AI fails
+      questions = [
+        { id: 'q1', text: 'Tell me about yourself and your experience.', type: 'behavioral', category: 'communication', difficulty: 'medium', weight: 1 },
+        { id: 'q2', text: 'Describe a challenging technical problem you solved recently.', type: 'technical', category: 'algorithms', difficulty: 'medium', weight: 2 },
+        { id: 'q3', text: 'How do you handle disagreements with team members?', type: 'behavioral', category: 'communication', difficulty: 'medium', weight: 1 },
+      ];
     }
     
     const interview = new Interview({
       userId: req.user._id,
       interviewType: 'practice',
       status: 'in_progress',
-      questions: questions, // Now uses AI-generated questions
+      questions: questions,
       answers: [],
       currentQuestionIndex: 0,
     });
@@ -329,8 +329,7 @@ router.post('/apply/:jobId', requireAuth, async (req, res, next) => {
     }
 
     // Get questions from job (AI-generated) or generate them
-    let questions = MOCK_QUESTIONS; // Default fallback
-    
+    let questions;
     if (job.generatedQuestions && job.generatedQuestions.length > 0) {
       // Use existing questions from job
       questions = job.generatedQuestions.map(q => ({
@@ -343,19 +342,35 @@ router.post('/apply/:jobId', requireAuth, async (req, res, next) => {
       // Generate new questions using AI
       try {
         const aiQuestions = await generateQuestions(job, {
-          numQuestions: 5,
-          technicalRatio: 0.6,
-          difficulty: 'medium',
+          numQuestions: job.questionConfig?.numQuestions || 5,
+          technicalRatio: job.questionConfig?.technicalRatio || 0.6,
+          difficulty: job.questionConfig?.difficulty || 'mixed',
         });
-        questions = mapQuestionsToMockFormat(aiQuestions);
+        questions = mapQuestionsToInterviewFormat(aiQuestions);
         
-        // Optionally save generated questions to job for reuse
-        // job.generatedQuestions = aiQuestions;
-        // await job.save();
+        // Save generated questions to job for reuse
+        job.generatedQuestions = aiQuestions.map(q => ({
+          id: q.id,
+          text: q.text,
+          type: q.type,
+          category: q.category,
+          difficulty: q.difficulty,
+          weight: q.weight,
+        }));
+        job.aiGeneration = {
+          questionsGenerated: true,
+          generatedAt: new Date(),
+          model: 'groq',
+        };
+        await job.save();
       } catch (error) {
-        console.error('Error generating questions:', error);
-        // Fallback to MOCK_QUESTIONS if AI fails
-        questions = MOCK_QUESTIONS;
+        console.error('[Interviews] Error generating questions:', error.message);
+        // Fallback to basic questions if AI fails
+        questions = [
+          { id: 'q1', text: `Tell me about your experience with ${job.title}.`, type: 'behavioral', category: 'communication', difficulty: 'medium', weight: 1 },
+          { id: 'q2', text: `Describe a technical challenge you faced in ${job.title} role.`, type: 'technical', category: 'algorithms', difficulty: 'medium', weight: 2 },
+          { id: 'q3', text: 'How do you approach problem-solving?', type: 'behavioral', category: 'communication', difficulty: 'medium', weight: 1 },
+        ];
       }
     }
 
@@ -493,7 +508,13 @@ router.post('/:id/answer', requireAuth, async (req, res, next) => {
         });
         
         // Evaluate all answers if not already evaluated
-        const evaluations = await evaluateAnswers(questionAnswerPairs, job);
+        const evaluations = await evaluateAnswers(
+          questionAnswerPairs.filter(pair => !pair.skipped && pair.answer).map(pair => ({
+            question: pair.question,
+            answer: pair.answer,
+          })),
+          job
+        );
         
         // Generate comprehensive report
         console.log('[Interviews] Generating AI report with', evaluations.length, 'evaluations');
@@ -555,7 +576,7 @@ router.post('/:id/complete', requireAuth, async (req, res, next) => {
     try {
       const job = interview.jobId ? await Job.findById(interview.jobId) : null;
       
-      // Prepare question-answer pairs for evaluation
+      // Get or create evaluations for all answers
       const questionAnswerPairs = interview.questions.map(q => {
         const answer = interview.answers.find(a => a.questionId === q.id);
         return {
@@ -567,22 +588,22 @@ router.post('/:id/complete', requireAuth, async (req, res, next) => {
       });
       
       // Evaluate all answers if not already evaluated
-      const evaluations = await evaluateAnswers(questionAnswerPairs, job);
+      const evaluations = await evaluateAnswers(
+        questionAnswerPairs.filter(pair => !pair.skipped && pair.answer).map(pair => ({
+          question: pair.question,
+          answer: pair.answer,
+        })),
+        job
+      );
       
       // Generate comprehensive report
       console.log('[Interviews] Generating AI report with', evaluations.length, 'evaluations');
-      const report = await generateReport(interview, evaluations, job);
+      interview.report = await generateReport(interview, evaluations, job);
       console.log('[Interviews] AI report generated successfully:', {
-        overallScore: report.overallScore,
-        technicalScore: report.technicalScore,
-        behavioralScore: report.behavioralScore,
+        overallScore: interview.report.overallScore,
+        technicalScore: interview.report.technicalScore,
+        behavioralScore: interview.report.behavioralScore,
       });
-      
-      interview.report = {
-        ...report,
-        generatedAt: new Date(),
-        model: process.env.LLM_PROVIDER || 'groq',
-      };
       interview.status = 'completed';
       interview.completedAt = new Date();
     } catch (error) {
@@ -641,7 +662,13 @@ router.get('/:id/report', requireAuth, async (req, res, next) => {
           });
           
           // Evaluate all answers if not already evaluated
-          const evaluations = await evaluateAnswers(questionAnswerPairs, job);
+          const evaluations = await evaluateAnswers(
+            questionAnswerPairs.filter(pair => !pair.skipped && pair.answer).map(pair => ({
+              question: pair.question,
+              answer: pair.answer,
+            })),
+            job
+          );
           
           // Generate comprehensive report
           console.log('[Interviews] Regenerating AI report on fetch with', evaluations.length, 'evaluations');
