@@ -9,8 +9,5 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
-  },
-  "dependencies": {
-    "groq-sdk": "^0.37.0"
   }
 }

@@ -35,15 +35,6 @@ async function askGroq(prompt, options = {}) {
   return response.choices[0].message.content;
 }
 
-/**
- * Generate interview questions for a job
- * @param {Object} job - Job document with title, level, description
- * @param {Object} config - Question generation config
- * @param {number} config.numQuestions - Number of questions to generate
- * @param {number} config.technicalRatio - Ratio of technical to behavioral (0-1)
- * @param {string} config.difficulty - 'easy', 'medium', 'hard', or 'mixed'
- * @returns {Promise<Array>} Array of question objects
- */
 export async function generateQuestions(job, config = {}) {
   const {
     numQuestions = 5,
@@ -125,7 +116,6 @@ Ensure:
       maxTokens: 2000,
     });
 
-    // Parse JSON response
     const jsonMatch = response.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       throw new Error('AI response is not valid JSON');
@@ -133,7 +123,6 @@ Ensure:
 
     const questions = JSON.parse(jsonMatch[0]);
 
-    // Validate and format questions
     return questions.map((q, index) => ({
       id: q.id || `q${index + 1}`,
       text: q.text,
@@ -163,13 +152,6 @@ Ensure:
   }
 }
 
-/**
- * Generate practice interview questions (generic, not job-specific)
- * @param {Object} options - Options for question generation
- * @param {string} options.level - 'Junior', 'Mid', or 'Senior'
- * @param {number} options.numQuestions - Number of questions
- * @returns {Promise<Array>} Array of question objects
- */
 export async function generatePracticeQuestions(options = {}) {
   const { level = 'Mid', numQuestions = 5 } = options;
 
@@ -258,4 +240,3 @@ Return ONLY a valid JSON array in this exact format:
 }
 
 export default { generateQuestions, generatePracticeQuestions };
-

@@ -7,11 +7,25 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch current user from /api/auth/me
+  const fetchUser = async () => {
+    try {
+      const userData = await api.me();
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      setUser(null);
+      throw err;
+    }
+  };
+
   // Try to restore session on mount
   useEffect(() => {
     api.refresh()
-      .then((data) => {
-        setUser(data.user);
+      .then(async (data) => {
+        setAccessToken(data.accessToken);
+        // Fetch user details including role
+        await fetchUser();
       })
       .catch(() => {
         setUser(null);
@@ -24,15 +38,17 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const data = await api.login(email, password);
     setAccessToken(data.accessToken);
-    setUser(data.user);
-    return data;
+    // Fetch user details including role
+    const userData = await fetchUser();
+    return { ...data, user: userData };
   };
 
-  const register = async (email, password) => {
-    const data = await api.register(email, password);
+  const register = async (email, password, role = 'candidate', companyName = '') => {
+    const data = await api.register(email, password, role, companyName);
     setAccessToken(data.accessToken);
-    setUser(data.user);
-    return data;
+    // Fetch user details including role
+    const userData = await fetchUser();
+    return { ...data, user: userData };
   };
 
   const logout = async () => {

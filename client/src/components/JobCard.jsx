@@ -9,31 +9,32 @@ export default function JobCard({ job }) {
   const handleApply = async () => {
     try {
       setLoading(true);
-      const data = await api.startInterview();
+      // Use applyToJob for real job applications, startInterview is for practice
+      const data = await api.applyToJob(job.id);
       navigate(`/interview/${data.interviewId}`);
     } catch (err) {
-      console.error('Failed to start interview:', err);
+      console.error('Failed to apply to job:', err);
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700 hover:border-emerald-500 transition-colors">
+    <div className="bg-black rounded-lg shadow-xl p-6 border border-white hover:border-white transition-colors">
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-white mb-2">{job.title}</h3>
-        <p className="text-emerald-400 font-medium">{job.company}</p>
+        <p className="text-white font-medium">{job.company}</p>
       </div>
       
       <div className="space-y-2 mb-4">
-        <div className="flex items-center text-slate-400 text-sm">
+        <div className="flex items-center text-white text-sm">
           <span className="mr-2">📍</span>
           {job.location}
         </div>
-        <div className="flex items-center text-slate-400 text-sm">
+        <div className="flex items-center text-white text-sm">
           <span className="mr-2">💼</span>
           {job.type}
         </div>
-        <div className="flex items-center text-slate-400 text-sm">
+        <div className="flex items-center text-white text-sm">
           <span className="mr-2">📅</span>
           {job.posted}
         </div>
@@ -42,7 +43,7 @@ export default function JobCard({ job }) {
       <button
         onClick={handleApply}
         disabled={loading}
-        className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+        className="w-full py-2 px-4 bg-white hover:bg-gray-200 disabled:bg-gray-400 disabled:cursor-not-allowed text-black font-medium rounded-md transition-colors"
       >
         {loading ? 'Starting...' : 'Apply Now'}
       </button>

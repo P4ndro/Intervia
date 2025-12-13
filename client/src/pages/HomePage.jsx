@@ -8,8 +8,14 @@ import { api } from '../api';
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  // TODO: Get role from user object or context when backend is integrated
-  const [userRole] = useState(localStorage.getItem('userRole') || 'candidate');
+  const userRole = user?.role || 'candidate';
+
+  // Redirect company users to company dashboard
+  useEffect(() => {
+    if (user?.role === 'company') {
+      navigate('/company-dashboard', { replace: true });
+    }
+  }, [user?.role, navigate]);
   const [startingInterview, setStartingInterview] = useState(false);
   const [error, setError] = useState('');
   const [jobs, setJobs] = useState([]);
@@ -40,14 +46,14 @@ export default function HomePage() {
   // Candidate View
   if (userRole === 'candidate') {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-white">
         <Navbar />
         <main className="max-w-6xl mx-auto px-6 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <h1 className="text-3xl font-bold text-black mb-2">
               Welcome back, {user?.email?.split('@')[0]}!
             </h1>
-            <p className="text-slate-400">Find your next opportunity</p>
+            <p className="text-black">Find your next opportunity</p>
           </div>
 
           <div className="mb-6">
@@ -64,22 +70,22 @@ export default function HomePage() {
                 }
               }}
               disabled={startingInterview}
-              className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="inline-block px-6 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             >
               {startingInterview ? 'Starting...' : 'Start Interview'}
             </button>
             {error && (
-              <p className="mt-2 text-red-400 text-sm">{error}</p>
+              <p className="mt-2 text-black text-sm">{error}</p>
             )}
           </div>
 
           {loadingJobs ? (
             <div className="text-center py-12">
-              <p className="text-slate-400">Loading jobs...</p>
+              <p className="text-black">Loading jobs...</p>
             </div>
           ) : jobs.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-slate-400">No jobs available at the moment.</p>
+              <p className="text-black">No jobs available at the moment.</p>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -95,23 +101,23 @@ export default function HomePage() {
 
   // Organization View
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-black mb-2">
             Organization Dashboard
           </h1>
-          <p className="text-slate-400">Manage your hiring process</p>
+          <p className="text-black">Manage your hiring process</p>
         </div>
 
-        <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700 mb-6">
-          <p className="text-slate-300 mb-4">
+        <div className="bg-black rounded-lg shadow-xl p-6 border border-white mb-6">
+          <p className="text-white mb-4">
             Access your company dashboard to manage jobs, view applicants, and analyze interview reports.
           </p>
           <Link
             to="/company-dashboard"
-            className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors"
+            className="inline-block px-6 py-3 bg-white hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
           >
             Go to Company Dashboard
           </Link>

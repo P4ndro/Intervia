@@ -14,8 +14,8 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-black">Loading...</div>
       </div>
     );
   }
@@ -24,12 +24,12 @@ function ProtectedRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-black">Loading...</div>
       </div>
     );
   }

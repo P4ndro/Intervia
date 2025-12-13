@@ -86,7 +86,8 @@ async function request(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed');
+    const errorMessage = data.error || data.message || `Request failed with status ${response.status}`;
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -95,10 +96,10 @@ async function request(endpoint, options = {}) {
 // Auth API
 export const api = {
   // Auth
-  register: (email, password) =>
+  register: (email, password, role = 'candidate', companyName = '') =>
     request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role, companyName }),
     }),
 
   login: (email, password) =>
@@ -120,6 +121,9 @@ export const api = {
   startInterview: () =>
     request('/interviews/start', { method: 'POST' }),
 
+  applyToJob: (jobId) =>
+    request(`/interviews/apply/${jobId}`, { method: 'POST' }),
+
   getInterview: (interviewId) =>
     request(`/interviews/${interviewId}`),
 
@@ -139,12 +143,41 @@ export const api = {
     request('/interviews'),
 
   // Jobs
-  listJobs: () =>
-    request('/jobs'),
+  listJobs: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return request(`/jobs${queryString ? `?${queryString}` : ''}`);
+  },
+
+  createJob: (jobData) =>
+    request('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(jobData),
+    }),
+
+  updateJob: (jobId, jobData) =>
+    request(`/jobs/${jobId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(jobData),
+    }),
+
+  deleteJob: (jobId) =>
+    request(`/jobs/${jobId}`, {
+      method: 'DELETE',
+    }),
+
+  getJob: (jobId) =>
+    request(`/jobs/${jobId}`),
 
   // Users
   getMyStats: () =>
     request('/users/me/stats'),
+  
+  getProfile: () =>
+    request('/users/me/profile'),
+
+  // Analytics
+  getFailureModes: () =>
+    request('/users/me/analytics/failure-modes'),
 };
 
 export default api;
