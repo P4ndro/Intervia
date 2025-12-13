@@ -194,10 +194,37 @@ function generateMockReport(interview) {
     recommendations.push('Keep practicing regularly to stay interview-ready');
   }
 
+  // Determine readiness band
+  let readinessBand = 'Not Ready';
+  if (overallScore >= 85) {
+    readinessBand = 'Ready';
+  } else if (overallScore >= 70) {
+    readinessBand = 'Almost Ready';
+  } else if (overallScore >= 50) {
+    readinessBand = 'Needs Work';
+  }
+
+  // Generate summary based on scores
+  let summary = '';
+  if (technicalPercent !== null && behavioralPercent !== null) {
+    if (overallScore >= 85) {
+      summary = `Excellent performance across both technical (${technicalPercent}%) and behavioral (${behavioralPercent}%) questions. Strong candidate ready for interviews.`;
+    } else if (overallScore >= 70) {
+      summary = `Good overall performance (${overallScore}%). Technical score: ${technicalPercent}%, Behavioral score: ${behavioralPercent}%. Almost ready with some areas to improve.`;
+    } else if (overallScore >= 50) {
+      summary = `Moderate performance (${overallScore}%). Technical: ${technicalPercent}%, Behavioral: ${behavioralPercent}%. Needs more practice before interviews.`;
+    } else {
+      summary = `Performance needs improvement (${overallScore}%). Focus on both technical depth and behavioral storytelling.`;
+    }
+  } else {
+    summary = `Overall score: ${overallScore}%. ${readinessBand}. Continue practicing to improve.`;
+  }
+
   return {
     overallScore,
     technicalScore: technicalPercent,
     behavioralScore: behavioralPercent,
+    readinessBand,
     primaryBlockers,
     strengths,
     areasForImprovement,
@@ -208,6 +235,11 @@ function generateMockReport(interview) {
       questionsSkipped,
       totalQuestions: questions.length,
     },
+    // Mock report metadata (to match AI-generated report structure)
+    summary,
+    aiConfidence: 0.5, // Lower confidence for mock reports
+    generatedAt: new Date(),
+    model: 'mock', // Indicates this is a mock report, not AI-generated
   };
 }
 
@@ -343,6 +375,12 @@ router.post('/:id/answer', requireAuth, async (req, res, next) => {
       a => a.questionId === questionId
     );
 
+    // Preserve existing aiEvaluation if answer is being updated
+    const existingAnswer = existingAnswerIndex >= 0 
+      ? interview.answers[existingAnswerIndex] 
+      : null;
+    const existingEvaluation = existingAnswer?.aiEvaluation;
+
     const answerData = {
       questionId,
       transcript: transcript || '',
@@ -350,8 +388,13 @@ router.post('/:id/answer', requireAuth, async (req, res, next) => {
       submittedAt: new Date(),
     };
 
+    // Only preserve existing AI evaluation if it exists (will be updated if re-evaluating)
+    if (existingEvaluation) {
+      answerData.aiEvaluation = existingEvaluation;
+    }
+
     if (existingAnswerIndex >= 0) {
-      // Update existing answer
+      // Update existing answer - preserve aiEvaluation unless re-evaluating
       interview.answers[existingAnswerIndex] = answerData;
     } else {
       // Add new answer
@@ -373,11 +416,15 @@ router.post('/:id/answer', requireAuth, async (req, res, next) => {
     //   const question = interview.questions.find(q => q.id === questionId);
     //   const job = interview.jobId ? await Job.findById(interview.jobId) : null;
     //   const evaluation = await evaluateAnswer(question, transcript, job);
-    //   answerData.aiEvaluation = {
-    //     ...evaluation,
-    //     evaluatedAt: new Date(),
-    //     model: process.env.LLM_PROVIDER,
-    //   };
+    //   // Update the answer in the array (not just answerData)
+    //   const answerToUpdate = interview.answers.find(a => a.questionId === questionId);
+    //   if (answerToUpdate) {
+    //     answerToUpdate.aiEvaluation = {
+    //       ...evaluation,
+    //       evaluatedAt: new Date(),
+    //       model: process.env.LLM_PROVIDER,
+    //     };
+    //   }
     // }
 
     // Check if all questions answered
