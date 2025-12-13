@@ -95,10 +95,10 @@ async function request(endpoint, options = {}) {
 // Auth API
 export const api = {
   // Auth
-  register: (email, password) =>
+  register: (email, password, role = 'candidate', companyName = '') =>
     request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role, companyName }),
     }),
 
   login: (email, password) =>
@@ -139,8 +139,30 @@ export const api = {
     request('/interviews'),
 
   // Jobs
-  listJobs: () =>
-    request('/jobs'),
+  listJobs: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return request(`/jobs${queryString ? `?${queryString}` : ''}`);
+  },
+
+  createJob: (jobData) =>
+    request('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(jobData),
+    }),
+
+  updateJob: (jobId, jobData) =>
+    request(`/jobs/${jobId}`, {
+      method: 'PUT',
+      body: JSON.stringify(jobData),
+    }),
+
+  deleteJob: (jobId) =>
+    request(`/jobs/${jobId}`, {
+      method: 'DELETE',
+    }),
+
+  getJob: (jobId) =>
+    request(`/jobs/${jobId}`),
 
   // Users
   getMyStats: () =>

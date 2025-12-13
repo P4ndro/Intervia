@@ -6,8 +6,7 @@ import { api } from '../api';
 export default function ProfilePage() {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
-  // TODO: Get role from user object or context when backend is integrated
-  const [userRole] = useState(localStorage.getItem('userRole') || 'candidate');
+  const userRole = user?.role || 'candidate';
   
   const [formData, setFormData] = useState({
     email: user?.email || '',
@@ -64,16 +63,16 @@ export default function ProfilePage() {
   // Candidate Profile View
   if (userRole === 'candidate') {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-white">
         <Navbar />
         <main className="max-w-4xl mx-auto px-6 py-8">
-          <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700">
+          <div className="bg-black rounded-lg shadow-xl p-8 border border-white">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-white">My Profile</h1>
               {!editing ? (
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+                  className="px-4 py-2 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -81,13 +80,13 @@ export default function ProfilePage() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+                    className="px-4 py-2 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditing(false)}
-                    className="px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-medium rounded-md transition-colors"
+                    className="px-4 py-2 border border-white hover:border-gray-300 text-white hover:text-gray-300 font-medium rounded-md transition-colors"
                   >
                     Cancel
                   </button>
@@ -98,34 +97,34 @@ export default function ProfilePage() {
             {/* Candidate Stats */}
             {loadingStats ? (
               <div className="mb-8 text-center py-4">
-                <p className="text-slate-400">Loading stats...</p>
+                <p className="text-white">Loading stats...</p>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                  <p className="text-slate-400 text-sm mb-1">Completed Interviews</p>
-                  <p className="text-2xl font-bold text-white">{candidateStats.completedInterviews}</p>
+                <div className="bg-white rounded-md p-4 border border-white">
+                  <p className="text-black text-sm mb-1">Completed Interviews</p>
+                  <p className="text-2xl font-bold text-black">{candidateStats.completedInterviews}</p>
                 </div>
-                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                  <p className="text-slate-400 text-sm mb-1">Average Score</p>
-                  <p className="text-2xl font-bold text-white">{candidateStats.averageScore}%</p>
+                <div className="bg-white rounded-md p-4 border border-white">
+                  <p className="text-black text-sm mb-1">Average Score</p>
+                  <p className="text-2xl font-bold text-black">{candidateStats.averageScore}%</p>
                 </div>
-                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                  <p className="text-slate-400 text-sm mb-1">Practice Time</p>
-                  <p className="text-2xl font-bold text-white">{candidateStats.totalPracticeTime}</p>
+                <div className="bg-white rounded-md p-4 border border-white">
+                  <p className="text-black text-sm mb-1">Practice Time</p>
+                  <p className="text-2xl font-bold text-black">{candidateStats.totalPracticeTime}</p>
                 </div>
               </div>
             )}
 
             <div className="space-y-6">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Email</label>
+              <label className="block text-sm text-white mb-2">Email</label>
               {editing ? (
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white"
                 />
               ) : (
                 <p className="text-white">{formData.email}</p>
@@ -133,13 +132,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Name</label>
+              <label className="block text-sm text-white mb-2">Name</label>
               {editing ? (
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white"
                   placeholder="Your name"
                 />
               ) : (
@@ -148,13 +147,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Bio</label>
+              <label className="block text-sm text-white mb-2">Bio</label>
               {editing ? (
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white resize-none"
                   placeholder="Tell us about yourself"
                 />
               ) : (
@@ -163,13 +162,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Skills</label>
+              <label className="block text-sm text-white mb-2">Skills</label>
               {editing ? (
                 <input
                   type="text"
                   value={formData.skills}
                   onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white"
                   placeholder="e.g., JavaScript, React, Node.js"
                 />
               ) : (
@@ -178,13 +177,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Experience</label>
+              <label className="block text-sm text-white mb-2">Experience</label>
               {editing ? (
                 <textarea
                   value={formData.experience}
                   onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white resize-none"
                   placeholder="Describe your work experience"
                 />
               ) : (
@@ -200,16 +199,16 @@ export default function ProfilePage() {
 
   // Organization Profile View
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-white">
       <Navbar />
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-slate-800 rounded-lg shadow-xl p-8 border border-slate-700">
+        <div className="bg-black rounded-lg shadow-xl p-8 border border-white">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold text-white">Organization Profile</h1>
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+                className="px-4 py-2 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors"
               >
                 Edit Profile
               </button>
@@ -217,13 +216,13 @@ export default function ProfilePage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-md transition-colors"
+                  className="px-4 py-2 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors"
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setEditing(false)}
-                  className="px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-medium rounded-md transition-colors"
+                  className="px-4 py-2 border border-white hover:border-gray-300 text-white hover:text-gray-300 font-medium rounded-md transition-colors"
                 >
                   Cancel
                 </button>
@@ -234,34 +233,34 @@ export default function ProfilePage() {
           {/* Organization Stats */}
           {loadingStats ? (
             <div className="mb-8 text-center py-4">
-              <p className="text-slate-400">Loading stats...</p>
+              <p className="text-white">Loading stats...</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Jobs Posted</p>
-                <p className="text-2xl font-bold text-white">{organizationStats.jobsPosted}</p>
+              <div className="bg-white rounded-md p-4 border border-white">
+                <p className="text-black text-sm mb-1">Jobs Posted</p>
+                <p className="text-2xl font-bold text-black">{organizationStats.jobsPosted}</p>
               </div>
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Total Applicants</p>
-                <p className="text-2xl font-bold text-white">{organizationStats.totalApplicants}</p>
+              <div className="bg-white rounded-md p-4 border border-white">
+                <p className="text-black text-sm mb-1">Total Applicants</p>
+                <p className="text-2xl font-bold text-black">{organizationStats.totalApplicants}</p>
               </div>
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Interviews Completed</p>
-                <p className="text-2xl font-bold text-white">{organizationStats.interviewsCompleted}</p>
+              <div className="bg-white rounded-md p-4 border border-white">
+                <p className="text-black text-sm mb-1">Interviews Completed</p>
+                <p className="text-2xl font-bold text-black">{organizationStats.interviewsCompleted}</p>
               </div>
             </div>
           )}
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Email</label>
+              <label className="block text-sm text-white mb-2">Email</label>
               {editing ? (
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white"
                 />
               ) : (
                 <p className="text-white">{formData.email}</p>
@@ -269,13 +268,13 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Company Name</label>
+              <label className="block text-sm text-white mb-2">Company Name</label>
               {editing ? (
                 <input
                   type="text"
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 bg-black border border-white rounded-md text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white"
                   placeholder="Your company name"
                 />
               ) : (
@@ -284,11 +283,11 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Access to Applicant Reports</label>
+              <label className="block text-sm text-white mb-2">Access to Applicant Reports</label>
               <p className="text-white">View and analyze candidate interview reports from your company dashboard.</p>
               <a
                 href="/company-dashboard"
-                className="text-emerald-400 hover:text-emerald-300 mt-2 inline-block"
+                className="text-white hover:text-gray-300 mt-2 inline-block underline"
               >
                 Go to Company Dashboard →
               </a>
