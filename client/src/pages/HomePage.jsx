@@ -170,7 +170,11 @@ export default function HomePage() {
             {/* Widget Grid */}
             <div className="widget-grid">
               {/* Card 1: Job Interview Prep */}
-              <div className="widget-card">
+              <div 
+                className="widget-card" 
+                onClick={() => navigate('/interview')}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="widget-header">
                   <div className="widget-icon">
                     <i className="fas fa-laptop-code"></i>
