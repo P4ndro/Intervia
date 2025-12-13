@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
 import Navbar from '../components/Navbar';
 import { api } from '../api';
 
@@ -25,11 +24,15 @@ export default function InterviewPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const speechSynthesisRef = useRef(null);
   
-  // STT (Speech-to-Text) - DISABLED for now (only TTS enabled)
-  const isRecording = false;
-  const recognitionSupported = false;
-  const interimTranscript = '';
+  // STT (Speech-to-Text) - Web Speech API
+  const [isRecording, setIsRecording] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  
+  // Check if Speech Recognition is supported
+  const recognitionSupported = typeof window !== 'undefined' && 
+    (window.SpeechRecognition || window.webkitSpeechRecognition);
 
   // Fetch interview data on mount
   useEffect(() => {
@@ -425,14 +428,121 @@ export default function InterviewPage() {
     setIsSpeaking(false);
   };
 
-  // STT Functions - DISABLED (only TTS enabled)
+  // STT Functions - Web Speech API
   const startRecording = () => {
-    // STT disabled - please type your answer manually
+    if (!recognitionSupported) {
+      setError('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (!navigator.onLine) {
+      setError('You are offline. Speech recognition requires an internet connection.');
+      return;
+    }
+
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+        isRecordingRef.current = true;
+        setInterimTranscript('');
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript + ' ';
+          } else {
+            interim += transcript;
+          }
+        }
+
+        setInterimTranscript(interim);
+
+        if (final) {
+          setAnswer(prev => {
+            const newAnswer = prev + (prev && !prev.endsWith(' ') ? ' ' : '') + final.trim();
+            return newAnswer;
+          });
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+          return;
+        }
+        
+        if (event.error === 'network') {
+          setError('Network error: Speech recognition requires internet. Check your connection or type manually.');
+          stopRecording();
+          return;
+        }
+        
+        if (event.error === 'not-allowed') {
+          setError('Microphone permission denied. Please allow microphone access.');
+          stopRecording();
+          return;
+        }
+        
+        setError(`Speech recognition error: ${event.error}. Please type your answer manually.`);
+        stopRecording();
+      };
+
+      recognition.onend = () => {
+        if (isRecordingRef.current && recognitionRef.current === recognition) {
+          try {
+            recognition.start();
+          } catch (err) {
+            setIsRecording(false);
+            isRecordingRef.current = false;
+            setInterimTranscript('');
+          }
+        } else {
+          setIsRecording(false);
+          isRecordingRef.current = false;
+          setInterimTranscript('');
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setError('Failed to start speech recognition. Please try again.');
+      setIsRecording(false);
+    }
   };
   
   const stopRecording = () => {
-    // STT disabled
+    isRecordingRef.current = false;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+    setInterimTranscript('');
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleSubmitAnswer = async (skipped = false) => {
     if (!currentQuestion) return;
@@ -709,15 +819,39 @@ export default function InterviewPage() {
               </div>
 
             <div className="mb-4">
-              <label className="block text-sm text-slate-400 mb-2">Your Answer</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm text-white">Your Answer</label>
+                {recognitionSupported && (
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={submitting}
+                    className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                      isRecording
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-white hover:bg-gray-200 text-black'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={isRecording ? 'Stop recording' : 'Start voice input'}
+                  >
+                    {isRecording ? '🎤 Stop Recording' : '🎤 Start Recording'}
+                  </button>
+                )}
+              </div>
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 rows={8}
                 disabled={submitting}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none disabled:opacity-50"
-                placeholder="Type your answer here..."
+                className="w-full px-4 py-3 bg-black border border-white rounded-md text-white placeholder-gray-300 focus:outline-none focus:border-white focus:ring-1 focus:ring-white resize-none disabled:opacity-50"
+                placeholder={isRecording ? "Speak your answer... (or type)" : "Type your answer here or click the mic to speak..."}
               />
+              {isRecording && (
+                <div className="mt-2 p-2 bg-black border border-white rounded-md">
+                  <p className="text-sm text-white">
+                    <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                    Listening... {interimTranscript && <span className="text-gray-300 italic">({interimTranscript})</span>}
+                  </p>
+                </div>
+              )}
             </div>
 
             {error && (
