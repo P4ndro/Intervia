@@ -1,80 +1,289 @@
 import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { useEffect } from 'react';
+import LandingNavbar from '../components/LandingNavbar';
+import FeatureCard from '../components/FeatureCard';
+import TestimonialCard from '../components/TestimonialCard';
+import StepCard from '../components/StepCard';
 
 export default function LandingPage() {
+  useEffect(() => {
+    // Add smooth scroll behavior
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Navbar />
+    <div className="min-h-screen bg-white">
+      <LandingNavbar />
       
       {/* Hero Section */}
-      <main className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-4">
-            <span className="text-emerald-400">FailProof</span>
-          </h1>
-          <p className="text-2xl text-slate-300 mb-2 font-semibold">
-            AI-powered Interview Analysis
+      <section className="pt-24 pb-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6 animate-fade-in">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Practice Real Job Interviews. Get Hired Faster.
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600">
+                Leverage our AI-powered platform to simulate real job interviews, tailored to your industry and role preferences.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/signup"
+                  className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors text-center font-medium"
+                  aria-label="Get Started"
+                >
+                  Get Started
+                </Link>
+                <Link
+                  to="/interview"
+                  className="px-8 py-3 bg-white text-black border-2 border-black rounded-md hover:bg-gray-50 transition-colors text-center font-medium"
+                  aria-label="Try Demo Interview"
+                >
+                  Try Demo Interview
+                </Link>
+              </div>
+            </div>
+            <div className="animate-fade-in-delay">
+              <div className="bg-gray-100 rounded-lg aspect-video flex items-center justify-center shadow-lg">
+                <div className="text-center p-8">
+                  <svg
+                    className="w-24 h-24 mx-auto text-gray-400 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <p className="text-gray-500">Hero Image Placeholder</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-16 px-6 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
+            How It Works
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <StepCard
+              number="1"
+              icon="🎯"
+              title="Choose"
+              description="Select your desired interview type and role to get started."
+            />
+            <StepCard
+              number="2"
+              icon="💬"
+              title="Practice"
+              description="Engage in realistic interview simulations with AI feedback."
+            />
+            <StepCard
+              number="3"
+              icon="📈"
+              title="Improve"
+              description="Receive detailed analysis and tips to enhance your skills."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
+            Features
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon="🎤"
+              title="Realistic Interviews"
+              description="Experience interviews that feel just like the real thing, with AI-powered questions tailored to your industry."
+            />
+            <FeatureCard
+              icon="🏢"
+              title="Company-Specific Questions"
+              description="Practice with questions from top companies in your field to prepare for your dream job."
+            />
+            <FeatureCard
+              icon="📊"
+              title="Progress Tracking"
+              description="Monitor your improvement over time with detailed analytics and performance metrics."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-16 px-6 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
+            Pricing
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="bg-white rounded-lg p-8 shadow-sm border-2 border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Free</h3>
+              <p className="text-4xl font-bold text-gray-900 mb-2">$0</p>
+              <p className="text-gray-600 mb-6">Perfect for getting started</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  3 practice interviews
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Basic feedback
+                </li>
+              </ul>
+              <Link
+                to="/signup"
+                className="block w-full text-center px-6 py-3 border-2 border-black text-black rounded-md hover:bg-gray-50 transition-colors font-medium"
+              >
+                Get Started
+              </Link>
+            </div>
+            <div className="bg-white rounded-lg p-8 shadow-lg border-2 border-black transform scale-105">
+              <div className="bg-black text-white text-sm font-semibold px-3 py-1 rounded-full inline-block mb-4">
+                Popular
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Pro</h3>
+              <p className="text-4xl font-bold text-gray-900 mb-2">$29<span className="text-lg text-gray-600">/month</span></p>
+              <p className="text-gray-600 mb-6">For serious job seekers</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Unlimited interviews
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Detailed AI analysis
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Company-specific questions
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Progress tracking
+                </li>
+              </ul>
+              <Link
+                to="/signup"
+                className="block w-full text-center px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+              >
+                Get Started
+              </Link>
+            </div>
+            <div className="bg-white rounded-lg p-8 shadow-sm border-2 border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Enterprise</h3>
+              <p className="text-4xl font-bold text-gray-900 mb-2">Custom</p>
+              <p className="text-gray-600 mb-6">For teams and organizations</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Everything in Pro
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Team management
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Custom integrations
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-green-500 mr-2">✓</span>
+                  Dedicated support
+                </li>
+              </ul>
+              <Link
+                to="/signup"
+                className="block w-full text-center px-6 py-3 border-2 border-black text-black rounded-md hover:bg-gray-50 transition-colors font-medium"
+              >
+                Contact Sales
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12">
+            Testimonials
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <TestimonialCard
+              image={null}
+              quote="InterviewAI helped me land my dream job at Google. The realistic practice sessions were invaluable."
+              name="Sarah Johnson"
+              role="Software Engineer"
+              company="Google"
+            />
+            <TestimonialCard
+              image={null}
+              quote="The AI feedback is incredibly detailed. I improved my interview skills significantly in just a few weeks."
+              name="Michael Chen"
+              role="Product Manager"
+              company="Microsoft"
+            />
+            <TestimonialCard
+              image={null}
+              quote="Best investment I made in my career. The company-specific questions really prepared me for my interviews."
+              name="Emily Rodriguez"
+              role="Data Scientist"
+              company="Amazon"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-16 px-6 bg-gray-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Get in Touch
+          </h2>
+          <p className="text-lg text-gray-600 mb-8">
+            Have questions? We'd love to hear from you.
           </p>
-          <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
-            Master your interviews with real-time AI feedback. Identify failure modes, improve your answers, and land your dream job.
-          </p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="mailto:contact@interviewai.com"
+              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+              aria-label="Email us"
+            >
+              Email Us
+            </a>
             <Link
               to="/signup"
-              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-medium rounded-lg transition-colors"
+              className="px-8 py-3 bg-white text-black border-2 border-black rounded-md hover:bg-gray-50 transition-colors font-medium"
+              aria-label="Get Started"
             >
               Get Started
             </Link>
-            <Link
-              to="/login"
-              className="px-8 py-3 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white text-lg font-medium rounded-lg transition-colors"
-            >
-              Sign In
-            </Link>
           </div>
         </div>
-
-        {/* Demo Placeholder */}
-        <div className="mt-16 bg-slate-800 border border-slate-700 rounded-xl p-8">
-          <h2 className="text-2xl font-semibold text-white mb-4 text-center">See It In Action</h2>
-          <div className="bg-slate-900 rounded-lg p-12 border border-slate-700 text-center">
-            <p className="text-slate-400">Demo video placeholder - Add your demo here</p>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-8 mt-24">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-            <div className="text-3xl mb-4">🎯</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Identify Failure Modes</h3>
-            <p className="text-slate-400">
-              Get instant feedback on filler words, answer structure, and communication patterns.
-            </p>
-          </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-            <div className="text-3xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Detailed Analytics</h3>
-            <p className="text-slate-400">
-              Visualize your performance with charts and metrics to track improvement over time.
-            </p>
-          </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-            <div className="text-3xl mb-4">🤖</div>
-            <h3 className="text-xl font-semibold text-white mb-2">AI-Powered Questions</h3>
-            <p className="text-slate-400">
-              Practice with AI-generated interview questions tailored to your role and industry.
-            </p>
-          </div>
-        </div>
-      </main>
+      </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 mt-20 py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center text-slate-500">
-          FailProof - Master your interviews with AI
+      <footer className="bg-gray-900 text-white py-8 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-gray-400">© 2023 InterviewAI. All rights reserved.</p>
         </div>
       </footer>
     </div>
   );
 }
-
