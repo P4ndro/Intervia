@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../authContext';
 import Navbar from '../components/Navbar';
+import { api } from '../api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -19,18 +20,40 @@ export default function ProfilePage() {
     jobsPosted: 0,
   });
 
-  // Mock data - replace with actual API calls
-  const candidateStats = {
-    completedInterviews: 5,
-    averageScore: 78,
-    totalPracticeTime: '2h 30m',
-  };
+  const [candidateStats, setCandidateStats] = useState({
+    completedInterviews: 0,
+    averageScore: 0,
+    totalPracticeTime: '0h 0m',
+  });
 
-  const organizationStats = {
-    jobsPosted: 12,
-    totalApplicants: 45,
-    interviewsCompleted: 38,
-  };
+  const [organizationStats, setOrganizationStats] = useState({
+    jobsPosted: 0,
+    totalApplicants: 0,
+    interviewsCompleted: 0,
+  });
+
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch stats from API
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setLoadingStats(true);
+        const data = await api.getMyStats();
+        if (userRole === 'candidate') {
+          setCandidateStats(data);
+        } else {
+          setOrganizationStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+
+    fetchStats();
+  }, [userRole]);
 
   const handleSave = async () => {
     // TODO: Update profile via API
@@ -73,20 +96,26 @@ export default function ProfilePage() {
             </div>
 
             {/* Candidate Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Completed Interviews</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.completedInterviews}</p>
+            {loadingStats ? (
+              <div className="mb-8 text-center py-4">
+                <p className="text-slate-400">Loading stats...</p>
               </div>
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Average Score</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.averageScore}%</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                  <p className="text-slate-400 text-sm mb-1">Completed Interviews</p>
+                  <p className="text-2xl font-bold text-white">{candidateStats.completedInterviews}</p>
+                </div>
+                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                  <p className="text-slate-400 text-sm mb-1">Average Score</p>
+                  <p className="text-2xl font-bold text-white">{candidateStats.averageScore}%</p>
+                </div>
+                <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                  <p className="text-slate-400 text-sm mb-1">Practice Time</p>
+                  <p className="text-2xl font-bold text-white">{candidateStats.totalPracticeTime}</p>
+                </div>
               </div>
-              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">Practice Time</p>
-                <p className="text-2xl font-bold text-white">{candidateStats.totalPracticeTime}</p>
-              </div>
-            </div>
+            )}
 
             <div className="space-y-6">
             <div>
@@ -203,20 +232,26 @@ export default function ProfilePage() {
           </div>
 
           {/* Organization Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-              <p className="text-slate-400 text-sm mb-1">Jobs Posted</p>
-              <p className="text-2xl font-bold text-white">{organizationStats.jobsPosted}</p>
+          {loadingStats ? (
+            <div className="mb-8 text-center py-4">
+              <p className="text-slate-400">Loading stats...</p>
             </div>
-            <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-              <p className="text-slate-400 text-sm mb-1">Total Applicants</p>
-              <p className="text-2xl font-bold text-white">{organizationStats.totalApplicants}</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                <p className="text-slate-400 text-sm mb-1">Jobs Posted</p>
+                <p className="text-2xl font-bold text-white">{organizationStats.jobsPosted}</p>
+              </div>
+              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                <p className="text-slate-400 text-sm mb-1">Total Applicants</p>
+                <p className="text-2xl font-bold text-white">{organizationStats.totalApplicants}</p>
+              </div>
+              <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
+                <p className="text-slate-400 text-sm mb-1">Interviews Completed</p>
+                <p className="text-2xl font-bold text-white">{organizationStats.interviewsCompleted}</p>
+              </div>
             </div>
-            <div className="bg-slate-900 rounded-md p-4 border border-slate-700">
-              <p className="text-slate-400 text-sm mb-1">Interviews Completed</p>
-              <p className="text-2xl font-bold text-white">{organizationStats.interviewsCompleted}</p>
-            </div>
-          </div>
+          )}
 
           <div className="space-y-6">
             <div>
