@@ -185,14 +185,16 @@ export default function ReportPage() {
         {/* Answers Review */}
         {reportData?.answers && reportData.answers.length > 0 && (
           <div className="bg-slate-800 rounded-lg shadow-xl p-6 border border-slate-700 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Your Answers</h2>
-            <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-white mb-4">Your Answers & Evaluations</h2>
+            <div className="space-y-6">
               {reportData.questions?.map((question, index) => {
                 const answer = reportData.answers.find(a => a.questionId === question.id);
+                const evaluation = answer?.aiEvaluation;
+                
                 return (
-                  <div key={question.id} className="p-4 bg-slate-900 rounded-md border border-slate-700">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-white font-medium">Q{index + 1}: {question.text}</h3>
+                  <div key={question.id} className="p-5 bg-slate-900 rounded-md border border-slate-700">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-white font-medium text-lg">Q{index + 1}: {question.text}</h3>
                       <span className={`text-xs px-2 py-1 rounded ${
                         question.type === 'technical' 
                           ? 'bg-blue-900/50 text-blue-400' 
@@ -201,11 +203,103 @@ export default function ReportPage() {
                         {question.type}
                       </span>
                     </div>
+                    
                     {answer ? (
                       answer.skipped ? (
                         <p className="text-yellow-400 italic">Skipped</p>
                       ) : (
-                        <p className="text-slate-300">{answer.transcript || 'No answer provided'}</p>
+                        <>
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-slate-400 mb-2">Your Answer:</h4>
+                            <p className="text-slate-300 whitespace-pre-wrap">{answer.transcript || 'No answer provided'}</p>
+                          </div>
+                          
+                          {evaluation ? (
+                            <div className="mt-4 pt-4 border-t border-slate-700">
+                              <h4 className="text-sm font-medium text-slate-400 mb-3">AI Evaluation:</h4>
+                              
+                              {/* Scores Grid */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                <div className="bg-slate-800 rounded p-2 border border-slate-700">
+                                  <div className="text-xs text-slate-500 mb-1">Relevance</div>
+                                  <div className="text-lg font-semibold text-white">{evaluation.relevanceScore || 0}/100</div>
+                                </div>
+                                <div className="bg-slate-800 rounded p-2 border border-slate-700">
+                                  <div className="text-xs text-slate-500 mb-1">Clarity</div>
+                                  <div className="text-lg font-semibold text-white">{evaluation.clarityScore || 0}/100</div>
+                                </div>
+                                <div className="bg-slate-800 rounded p-2 border border-slate-700">
+                                  <div className="text-xs text-slate-500 mb-1">Depth</div>
+                                  <div className="text-lg font-semibold text-white">{evaluation.depthScore || 0}/100</div>
+                                </div>
+                                {evaluation.technicalAccuracy !== null && evaluation.technicalAccuracy !== undefined && (
+                                  <div className="bg-slate-800 rounded p-2 border border-slate-700">
+                                    <div className="text-xs text-slate-500 mb-1">Technical</div>
+                                    <div className="text-lg font-semibold text-white">{evaluation.technicalAccuracy}/100</div>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Detailed Feedback */}
+                              {evaluation.feedback && (
+                                <div className="mb-4">
+                                  <h5 className="text-sm font-medium text-slate-400 mb-2">Detailed Feedback:</h5>
+                                  <div 
+                                    className="text-slate-300 prose prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ 
+                                      __html: evaluation.feedback
+                                        .replace(/\n/g, '<br />')
+                                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Strengths */}
+                              {evaluation.strengths && evaluation.strengths.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-sm font-medium text-emerald-400 mb-2">Strengths:</h5>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {evaluation.strengths.map((strength, idx) => (
+                                      <li key={idx} className="text-slate-300 text-sm">{strength}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {/* Detected Issues */}
+                              {evaluation.detectedIssues && evaluation.detectedIssues.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-sm font-medium text-yellow-400 mb-2">Areas to Improve:</h5>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {evaluation.detectedIssues.map((issue, idx) => (
+                                      <li key={idx} className="text-slate-300 text-sm">{issue}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {/* Keywords */}
+                              {evaluation.keywords && evaluation.keywords.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-slate-400 mb-2">Key Topics Mentioned:</h5>
+                                  <div className="flex flex-wrap gap-2">
+                                    {evaluation.keywords.map((keyword, idx) => (
+                                      <span key={idx} className="text-xs px-2 py-1 bg-slate-800 text-slate-300 rounded border border-slate-700">
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-4 pt-4 border-t border-slate-700">
+                              <p className="text-slate-500 italic text-sm">Evaluation pending...</p>
+                            </div>
+                          )}
+                        </>
                       )
                     ) : (
                       <p className="text-slate-500 italic">Not answered</p>
