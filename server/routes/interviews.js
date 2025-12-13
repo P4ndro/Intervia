@@ -237,7 +237,6 @@ function generateMockReport(interview) {
     technicalScore: technicalPercent,
     behavioralScore: behavioralPercent,
     readinessBand,
-    summary: summary || `⚠️ FALLBACK REPORT: AI evaluation unavailable. Scores based on word count only (${overallScore}% overall). Enable AI for accurate evaluation.`,
     primaryBlockers,
     strengths,
     areasForImprovement,
@@ -249,7 +248,7 @@ function generateMockReport(interview) {
       totalQuestions: questions.length,
     },
     // Mock report metadata (to match AI-generated report structure)
-    summary,
+    summary: summary || `⚠️ FALLBACK REPORT: AI evaluation unavailable. Scores based on word count only (${overallScore}% overall). Enable AI for accurate evaluation.`,
     aiConfidence: 0.5, // Lower confidence for mock reports
     generatedAt: new Date(),
     model: 'mock', // Indicates this is a mock report, not AI-generated
@@ -450,20 +449,25 @@ router.post('/:id/answer', requireAuth, async (req, res, next) => {
         const job = interview.jobId ? await Job.findById(interview.jobId) : null;
         const evaluation = await evaluateAnswer(question, transcript, job);
         
-        // Update the answer in the array
+        // Update the answer in the array - preserve existing evaluation metadata if present
         const answerToUpdate = interview.answers.find(a => a.questionId === questionId);
         if (answerToUpdate) {
+          // Preserve existing evaluation metadata (evaluatedAt, model) if this is an update
+          const existingEval = answerToUpdate.aiEvaluation;
           answerToUpdate.aiEvaluation = {
             ...evaluation,
-            evaluatedAt: new Date(),
+            evaluatedAt: existingEval?.evaluatedAt || new Date(),
             model: process.env.LLM_PROVIDER || 'groq',
           };
         }
       } catch (error) {
         console.error('[Interviews] Error evaluating answer:', error.message);
-        // Continue without evaluation - don't fail the request
+        // Continue without evaluation - existing evaluation is preserved in answerData
+        // If evaluation fails, the existing evaluation (if any) remains in the answer
+        // because it was preserved in answerData.aiEvaluation above (line 425)
       }
     }
+    // If skipped or no transcript, existing evaluation is already preserved in answerData (line 425)
 
     // Check if all questions answered
     const allAnswered = interview.questions.every(q =>
