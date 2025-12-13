@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../authContext';
 import Navbar from '../components/Navbar';
 import { api } from '../api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const userRole = user?.role || 'candidate';
+
+  // Redirect companies to company dashboard (they don't have a profile page)
+  useEffect(() => {
+    if (user?.role === 'company') {
+      navigate('/company-dashboard', { replace: true });
+    }
+  }, [user?.role, navigate]);
   
   const [formData, setFormData] = useState({
     email: user?.email || '',
@@ -15,9 +24,20 @@ export default function ProfilePage() {
     skills: '',
     experience: '',
     // Organization fields
-    companyName: '',
+    companyName: user?.companyName || '',
     jobsPosted: 0,
   });
+
+  // Update formData when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || prev.email,
+        companyName: user.companyName || prev.companyName,
+      }));
+    }
+  }, [user]);
 
   const [candidateStats, setCandidateStats] = useState({
     completedInterviews: 0,

@@ -9,10 +9,11 @@ export default function JobCard({ job }) {
   const handleApply = async () => {
     try {
       setLoading(true);
-      const data = await api.startInterview();
+      // Use applyToJob for real job applications, startInterview is for practice
+      const data = await api.applyToJob(job.id);
       navigate(`/interview/${data.interviewId}`);
     } catch (err) {
-      console.error('Failed to start interview:', err);
+      console.error('Failed to apply to job:', err);
       setLoading(false);
     }
   };

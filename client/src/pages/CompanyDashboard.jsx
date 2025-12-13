@@ -16,21 +16,17 @@ export default function CompanyDashboard() {
   const [error, setError] = useState('');
   const [editingJob, setEditingJob] = useState(null);
   const [showJobForm, setShowJobForm] = useState(false);
-  const [jobForm, setJobForm] = useState({ title: '', description: '', location: '', type: 'full-time' });
+  const [jobForm, setJobForm] = useState({ 
+    title: '', 
+    description: '', 
+    location: '', 
+    level: 'Mid',
+    employmentType: 'Full-time' 
+  });
 
-  const recentCandidates = [
-    { id: 1, name: 'John Doe', position: 'Software Engineer', score: 85, date: '2024-01-15', jobId: 1 },
-    { id: 2, name: 'Jane Smith', position: 'Frontend Developer', score: 92, date: '2024-01-14', jobId: 2 },
-    { id: 3, name: 'Bob Johnson', position: 'Backend Engineer', score: 76, date: '2024-01-13', jobId: 3 },
-  ];
-
-  // Common failure modes analytics - TODO: Replace with actual analytics from backend
-  const commonFailureModes = [
-    { mode: 'Filler Words', count: 45, percentage: 36 },
-    { mode: 'Answer Length', count: 32, percentage: 26 },
-    { mode: 'Structure Issues', count: 28, percentage: 23 },
-    { mode: 'Eye Contact', count: 15, percentage: 12 },
-  ];
+  const [recentCandidates, setRecentCandidates] = useState([]);
+  const [commonFailureModes, setCommonFailureModes] = useState([]);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
   // Fetch jobs on mount
   useEffect(() => {
@@ -56,16 +52,37 @@ export default function CompanyDashboard() {
   }, []);
 
   const handleAddJob = async () => {
+    // Validate required fields
+    if (!jobForm.title || !jobForm.level || !jobForm.description) {
+      setError('Title, level, and description are required');
+      return;
+    }
+
     try {
       setError('');
-      const newJob = await api.createJob({
+      console.log('Creating job with data:', {
         title: jobForm.title,
+        level: jobForm.level,
         description: jobForm.description,
         location: jobForm.location,
-        type: jobForm.type,
+        employmentType: jobForm.employmentType,
       });
+      const response = await api.createJob({
+        title: jobForm.title,
+        level: jobForm.level,
+        description: jobForm.description,
+        location: jobForm.location,
+        employmentType: jobForm.employmentType,
+      });
+      const newJob = response.job || response; // Handle both formats
       setJobs([...jobs, newJob]);
-      setJobForm({ title: '', description: '', location: '', type: 'full-time' });
+      setJobForm({ 
+        title: '', 
+        description: '', 
+        location: '', 
+        level: 'Mid',
+        employmentType: 'Full-time' 
+      });
       setShowJobForm(false);
       // Update stats
       setStats(prev => ({
@@ -73,6 +90,7 @@ export default function CompanyDashboard() {
         activePositions: prev.activePositions + 1,
       }));
     } catch (err) {
+      console.error('Job creation error:', err);
       setError(err.message || 'Failed to create job');
     }
   };
@@ -80,10 +98,11 @@ export default function CompanyDashboard() {
   const handleEditJob = (job) => {
     setEditingJob(job);
     setJobForm({ 
-      title: job.title, 
+      title: job.title || '', 
       description: job.description || '',
       location: job.location || '',
-      type: job.type || 'full-time',
+      level: job.level || 'Mid',
+      employmentType: job.employmentType || job.type || 'Full-time', // Support both formats
     });
     setShowJobForm(true);
   };
@@ -91,17 +110,25 @@ export default function CompanyDashboard() {
   const handleUpdateJob = async () => {
     try {
       setError('');
-      const updatedJob = await api.updateJob(editingJob.id, {
+      const response = await api.updateJob(editingJob.id, {
         title: jobForm.title,
+        level: jobForm.level,
         description: jobForm.description,
         location: jobForm.location,
-        type: jobForm.type,
+        employmentType: jobForm.employmentType,
       });
+      const updatedJob = response.job || response; // Handle both formats
       setJobs(jobs.map(job => 
         job.id === editingJob.id ? updatedJob : job
       ));
       setEditingJob(null);
-      setJobForm({ title: '', description: '', location: '', type: 'full-time' });
+      setJobForm({ 
+        title: '', 
+        description: '', 
+        location: '', 
+        level: 'Mid',
+        employmentType: 'Full-time' 
+      });
       setShowJobForm(false);
     } catch (err) {
       setError(err.message || 'Failed to update job');
@@ -172,7 +199,13 @@ export default function CompanyDashboard() {
               onClick={() => {
                 setShowJobForm(true);
                 setEditingJob(null);
-                setJobForm({ title: '', description: '', location: '', type: 'full-time' });
+                setJobForm({ 
+                  title: '', 
+                  description: '', 
+                  location: '', 
+                  level: 'Mid',
+                  employmentType: 'Full-time' 
+                });
               }}
               className="px-4 py-2 bg-white hover:bg-gray-200 text-black font-medium rounded-md transition-colors"
             >
@@ -223,16 +256,28 @@ export default function CompanyDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-white mb-2">Job Type</label>
+                  <label className="block text-sm text-white mb-2">Level</label>
                   <select
-                    value={jobForm.type}
-                    onChange={(e) => setJobForm({ ...jobForm, type: e.target.value })}
+                    value={jobForm.level}
+                    onChange={(e) => setJobForm({ ...jobForm, level: e.target.value })}
                     className="w-full px-3 py-2 bg-white border border-black rounded-md text-black focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   >
-                    <option value="full-time">Full-time</option>
-                    <option value="part-time">Part-time</option>
-                    <option value="contract">Contract</option>
-                    <option value="internship">Internship</option>
+                    <option value="Junior">Junior</option>
+                    <option value="Mid">Mid</option>
+                    <option value="Senior">Senior</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-white mb-2">Employment Type</label>
+                  <select
+                    value={jobForm.employmentType}
+                    onChange={(e) => setJobForm({ ...jobForm, employmentType: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-black rounded-md text-black focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
+                  >
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
                   </select>
                 </div>
                 <div className="flex gap-2">
@@ -246,7 +291,13 @@ export default function CompanyDashboard() {
                     onClick={() => {
                       setShowJobForm(false);
                       setEditingJob(null);
-                      setJobForm({ title: '', description: '', location: '', type: 'full-time' });
+                      setJobForm({ 
+                        title: '', 
+                        description: '', 
+                        location: '', 
+                        level: 'Mid',
+                        employmentType: 'Full-time' 
+                      });
                       setError('');
                     }}
                     className="px-4 py-2 border border-white hover:border-gray-300 text-white hover:text-gray-300 font-medium rounded-md transition-colors"
@@ -312,25 +363,34 @@ export default function CompanyDashboard() {
         {/* Common Failure Modes Analytics */}
         <div className="bg-black rounded-lg shadow-xl p-6 border border-white mb-8">
           <h2 className="text-xl font-semibold text-white mb-4">Common Failure Modes</h2>
-          <div className="space-y-3">
-            {commonFailureModes.map((mode, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-white font-medium">{mode.mode}</span>
-                    <span className="text-white text-sm">{mode.count} instances ({mode.percentage}%)</span>
-                  </div>
-                  <div className="w-full bg-white rounded-full h-2">
-                    <div
-                      className="bg-black h-2 rounded-full"
-                      style={{ width: `${mode.percentage}%` }}
-                    />
+          {loadingAnalytics ? (
+            <div className="text-center py-8">
+              <p className="text-white">Loading analytics...</p>
+            </div>
+          ) : commonFailureModes.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-white">No failure mode data available yet. Analytics will appear as candidates complete interviews.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {commonFailureModes.map((mode, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-white font-medium">{mode.mode}</span>
+                      <span className="text-white text-sm">{mode.count} instances ({mode.percentage}%)</span>
+                    </div>
+                    <div className="w-full bg-white rounded-full h-2">
+                      <div
+                        className="bg-black h-2 rounded-full"
+                        style={{ width: `${mode.percentage}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-white mt-4">Analytics placeholder - Replace with real failure mode data</p>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Candidates */}

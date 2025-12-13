@@ -86,7 +86,8 @@ async function request(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed');
+    const errorMessage = data.error || data.message || `Request failed with status ${response.status}`;
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -120,6 +121,9 @@ export const api = {
   startInterview: () =>
     request('/interviews/start', { method: 'POST' }),
 
+  applyToJob: (jobId) =>
+    request(`/interviews/apply/${jobId}`, { method: 'POST' }),
+
   getInterview: (interviewId) =>
     request(`/interviews/${interviewId}`),
 
@@ -152,7 +156,7 @@ export const api = {
 
   updateJob: (jobId, jobData) =>
     request(`/jobs/${jobId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(jobData),
     }),
 
@@ -167,6 +171,10 @@ export const api = {
   // Users
   getMyStats: () =>
     request('/users/me/stats'),
+
+  // Analytics
+  getFailureModes: () =>
+    request('/users/me/analytics/failure-modes'),
 };
 
 export default api;

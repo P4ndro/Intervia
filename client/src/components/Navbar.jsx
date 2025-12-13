@@ -23,31 +23,36 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         {isAuthenticated ? (
           <>
-            <Link
-              to="/home"
-              className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              to="/profile"
-              className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
-            >
-              My Profile
-            </Link>
-            <Link
-              to="/report"
-              className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
-            >
-              Reports
-            </Link>
-            {user?.role === 'company' && (
-              <Link
-                to="/company-dashboard"
-                className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
-              >
-                Company Dashboard
-              </Link>
+            {user?.role === 'company' ? (
+              <>
+                <Link
+                  to="/company-dashboard"
+                  className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
+                >
+                  Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/home"
+                  className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/profile"
+                  className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  to="/report"
+                  className="px-4 py-2 text-black hover:text-gray-600 transition-colors"
+                >
+                  Reports
+                </Link>
+              </>
             )}
             <span className="text-black text-sm">{user?.email}</span>
             <button
