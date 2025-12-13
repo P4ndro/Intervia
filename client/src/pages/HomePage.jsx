@@ -234,33 +234,6 @@ export default function HomePage() {
 
           {/* Right Sidebar */}
           <aside className="sidebar-right">
-            {/* Upcoming Interviews */}
-            <div className="sidebar-section">
-              <h3>Upcoming Interviews</h3>
-              <div className="video-preview">
-                <div className="play-button">
-                  <i className="fas fa-play"></i>
-                </div>
-              </div>
-              <div className="interview-info">
-                <h4>Software Engineer</h4>
-                <div className="interview-details">
-                  <div className="detail-row">
-                    <span>Ends in:</span>
-                    <span>30 min</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Participants online:</span>
-                    <span>15/20</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Status:</span>
-                    <span className="status-active">Active</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Performance Summary */}
             <div className="sidebar-section">
               <h3>Performance Summary</h3>
