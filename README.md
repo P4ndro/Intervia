@@ -2,6 +2,21 @@
 
 An AI-powered mock interview platform that helps candidates prepare for job interviews and produces explainable interview reports.
 
+## 🏆 Hackathon Project
+
+**Built for:** [GDG Kutaisi HACK THE HALLS Hackathon 2025](https://gdg.community.dev/)
+
+Intervia was developed as a hackathon project for the GDG Kutaisi HACK THE HALLS Hackathon 2025. This project showcases a complete full-stack application with AI integration, real-time video interviewing capabilities, and comprehensive evaluation features.
+
+### 👥 Team
+
+- **Backend Developer** - Sandro Iobidze
+- **AI Logic Developer** - Davit Jincharadze
+- **Frontend Developer** - Juliet Chapidze
+- **Frontend Developer** - Saba Ananidze
+
+Practice mock interviews with an AI interviewer, get real-time feedback, and receive comprehensive reports with actionable insights.
+
 ## 🎯 Vision
 
 Intervia is a productivity tool designed to:
@@ -422,7 +437,6 @@ cd server && npm start
 - `server/AI_README.md` - Detailed AI integration guide
 - `server/API_ENDPOINTS.md` - Complete API documentation
 - `server/FREE_VIDEO_INTERVIEWER.md` - Video interviewer implementation details
-- `FRONTEND_BACKEND_INTEGRATION_REPORT.md` - Integration notes
 
 ---
 
