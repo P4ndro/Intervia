@@ -148,6 +148,12 @@ export const api = {
     return request(`/jobs${queryString ? `?${queryString}` : ''}`);
   },
 
+  createSystemCourse: (courseData) =>
+    request('/jobs/system', {
+      method: 'POST',
+      body: JSON.stringify(courseData),
+    }),
+
   createJob: (jobData) =>
     request('/jobs', {
       method: 'POST',

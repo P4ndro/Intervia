@@ -4,7 +4,8 @@ const jobSchema = new mongoose.Schema({
   companyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false, // Optional for system courses
+    default: null,
   },
   title: {
     type: String,

@@ -206,15 +206,8 @@ export default function InterviewPage() {
   
   // Check if current question is code-based and detect language
   const isCodeQuestion = currentQuestion && (
-    currentQuestion.type === 'technical' ||
     currentQuestion.type === 'coding' ||
-    currentQuestion.category?.toLowerCase().includes('algorithm') ||
-    currentQuestion.category?.toLowerCase().includes('coding') ||
-    currentQuestion.category?.toLowerCase().includes('code') ||
-    (currentQuestion.text?.toLowerCase().includes('write') && currentQuestion.text?.toLowerCase().includes('code')) ||
-    currentQuestion.text?.toLowerCase().includes('implement') ||
-    currentQuestion.text?.toLowerCase().includes('function') ||
-    currentQuestion.text?.includes('```')
+    currentQuestion.category?.toLowerCase() === 'coding'
   );
   
   // Detect programming language from question text
@@ -826,14 +819,36 @@ export default function InterviewPage() {
 
             <div className="mb-4">
               <label className="block text-sm text-slate-400 mb-2">Your Answer</label>
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                rows={8}
-                disabled={submitting}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none disabled:opacity-50"
-                placeholder="Type your answer here..."
-              />
+              {isCodeQuestion ? (
+                <div className="border border-slate-600 rounded-md overflow-hidden">
+                  <Editor
+                    height="400px"
+                    language={codeLanguage}
+                    value={answer}
+                    onChange={(value) => setAnswer(value || '')}
+                    theme="vs-dark"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 2,
+                      readOnly: submitting,
+                      wordWrap: 'on',
+                    }}
+                  />
+                </div>
+              ) : (
+                <textarea
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  rows={8}
+                  disabled={submitting}
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none disabled:opacity-50"
+                  placeholder="Type your answer here..."
+                />
+              )}
             </div>
 
             {error && (
