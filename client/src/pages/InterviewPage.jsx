@@ -30,6 +30,10 @@ export default function InterviewPage() {
   const recognitionSupported = false;
   const interimTranscript = '';
   const recognitionRef = useRef(null);
+  
+  // Timer state: 2 minutes = 120 seconds
+  const [timeRemaining, setTimeRemaining] = useState(120);
+  const timerIntervalRef = useRef(null);
 
   // Fetch interview data on mount
   useEffect(() => {
@@ -111,11 +115,99 @@ export default function InterviewPage() {
     }
   }, [questionIndex, questions, answers]);
 
+  // Timer effect: countdown and auto-submit
+  useEffect(() => {
+    // Reset timer when question changes
+    setTimeRemaining(120);
+    
+    // Clear any existing interval
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    
+    const currentQ = questions[questionIndex];
+    
+    // Don't start timer if submitting or no current question
+    if (submitting || !currentQ) {
+      return;
+    }
+    
+    // Start countdown
+    timerIntervalRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          // Timer reached 0, auto-submit
+          clearInterval(timerIntervalRef.current);
+          // Auto-submit logic (inline to avoid dependency issues)
+          const autoSubmit = async () => {
+            const q = questions[questionIndex];
+            if (!q) return;
+            
+            try {
+              setSubmitting(true);
+              setError('');
+              
+              // Get current answer value
+              const currentAnswer = answers[q.id] || answer || '';
+              
+              const result = await api.submitAnswer(
+                interviewId,
+                q.id,
+                currentAnswer,
+                false
+              );
+              
+              // Save answer locally
+              if (currentAnswer.trim()) {
+                setAnswers(prev => ({
+                  ...prev,
+                  [q.id]: currentAnswer,
+                }));
+              }
+              
+              // Auto-complete: if backend says completed, go to report
+              if (result.completed) {
+                if (streamRef.current) {
+                  streamRef.current.getTracks().forEach((track) => track.stop());
+                }
+                navigate(`/report/${interviewId}`);
+                return;
+              }
+              
+              // Move to next question
+              if (questionIndex < questions.length - 1) {
+                setQuestionIndex(questionIndex + 1);
+                setAnswer('');
+                setTimeRemaining(120);
+              }
+            } catch (err) {
+              setError(err.message || 'Failed to submit answer');
+            } finally {
+              setSubmitting(false);
+            }
+          };
+          
+          autoSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Cleanup on unmount or question change
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [questionIndex, questions, submitting, interviewId, answer, answers, navigate]);
+
   const currentQuestion = questions[questionIndex];
   
   // Check if current question is code-based and detect language
   const isCodeQuestion = currentQuestion && (
     currentQuestion.type === 'technical' ||
+    currentQuestion.type === 'coding' ||
     currentQuestion.category?.toLowerCase().includes('algorithm') ||
     currentQuestion.category?.toLowerCase().includes('coding') ||
     currentQuestion.category?.toLowerCase().includes('code') ||
@@ -437,6 +529,11 @@ export default function InterviewPage() {
   const handleSubmitAnswer = async (skipped = false) => {
     if (!currentQuestion) return;
     
+    // Clear timer when submitting
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    
     try {
       setSubmitting(true);
       setError('');
@@ -478,6 +575,7 @@ export default function InterviewPage() {
       if (questionIndex < questions.length - 1) {
         setQuestionIndex(questionIndex + 1);
         setAnswer('');
+        setTimeRemaining(120); // Reset timer for next question
       } else {
         // We're on the last question but backend didn't mark as completed
         // This shouldn't happen, but if it does, try to complete manually
@@ -699,14 +797,32 @@ export default function InterviewPage() {
                 <h2 className="text-xl font-semibold text-white">
                   Question {questionIndex + 1}/{questions.length}
                 </h2>
-                <span className="text-xs px-2 py-1 rounded bg-white text-black">
-                  {currentQuestion?.type || 'behavioral'}
-                </span>
+                <div className="flex items-center gap-3">
+                  {/* Timer Display */}
+                  <div className={`px-3 py-1 rounded-md font-mono font-semibold text-sm ${
+                    timeRemaining <= 30 
+                      ? 'bg-red-900/50 text-red-400 border border-red-700' 
+                      : timeRemaining <= 60 
+                      ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-700'
+                      : 'bg-slate-700 text-emerald-400 border border-slate-600'
+                  }`}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    currentQuestion?.type === 'technical' || 
+                    currentQuestion?.type === 'coding' || 
+                    currentQuestion?.type === 'theoretical'
+                      ? 'bg-blue-900/50 text-blue-400' 
+                      : 'bg-emerald-900/50 text-emerald-400'
+                  }`}>
+                    {currentQuestion?.type || 'behavioral'}
+                  </span>
+                </div>
               </div>
               <div className="bg-slate-900 rounded-md p-4 border border-slate-700 mb-4">
                 <p className="text-white text-lg">{currentQuestion?.text}</p>
               </div>
-              </div>
+            </div>
 
             <div className="mb-4">
               <label className="block text-sm text-slate-400 mb-2">Your Answer</label>
