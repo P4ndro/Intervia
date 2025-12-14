@@ -435,8 +435,6 @@ cd server && npm start
 ## 📚 Additional Documentation
 
 - `server/AI_README.md` - Detailed AI integration guide
-- `server/API_ENDPOINTS.md` - Complete API documentation
-- `server/FREE_VIDEO_INTERVIEWER.md` - Video interviewer implementation details
 
 ---
 
