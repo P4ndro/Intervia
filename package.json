@@ -1,5 +1,5 @@
 {
-  "name": "santa-claude",
+  "name": "intervia",
   "version": "1.0.0",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",

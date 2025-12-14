@@ -75,7 +75,7 @@ export default function LoginPage() {
         <div className="bg-black rounded-2xl shadow-2xl w-full max-w-md p-8 md:p-10 border border-white">
           {/* Welcome Heading */}
           <h2 className="text-3xl font-semibold text-white mb-8 text-center">
-            Welcome to InterviewAI
+            Welcome to Intervia
           </h2>
 
           {/* Login Fields */}

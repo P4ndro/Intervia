@@ -231,7 +231,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <TestimonialCard
               image={null}
-              quote="InterviewAI helped me land my dream job at Google. The realistic practice sessions were invaluable."
+              quote="Intervia helped me land my dream job at Google. The realistic practice sessions were invaluable."
               name="Sarah Johnson"
               role="Software Engineer"
               company="Google"
@@ -285,7 +285,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-8 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-400">© 2023 InterviewAI. All rights reserved.</p>
+          <p className="text-gray-400">© 2023 Intervia. All rights reserved.</p>
         </div>
       </footer>
     </div>

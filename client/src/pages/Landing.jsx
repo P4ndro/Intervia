@@ -6,7 +6,7 @@ export default function Landing() {
       {/* Navigation */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="text-2xl font-bold text-white">
-          🎅 Santa Claude
+          Intervia
         </div>
         <div className="flex gap-4">
           <Link
@@ -28,7 +28,7 @@ export default function Landing() {
       <main className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-            Welcome to <span className="text-emerald-400">Santa Claude</span>
+            Welcome to <span className="text-emerald-400">Intervia</span>
           </h1>
           <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
             Your AI-powered holiday companion. Build something magical with modern web technologies.
