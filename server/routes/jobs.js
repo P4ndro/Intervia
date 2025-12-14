@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     const formattedJobs = jobs.map(job => ({
       id: job._id.toString(),
       title: job.title,
-      company: job.companyId?.companyName || 'Unknown Company',
+      company: job.companyId?.companyName || 'System Course',
       level: job.level,
       location: job.location,
       type: job.employmentType,
@@ -39,6 +39,53 @@ router.get('/company/my-jobs', requireCompany, async (req, res, next) => {
       .sort({ createdAt: -1 });
 
     res.json({ jobs });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/jobs/system - Create a system course (no company required)
+router.post('/system', requireAuth, async (req, res, next) => {
+  try {
+    const { title, level, description, location, employmentType } = req.body;
+
+    if (!title || !level || !description) {
+      return res.status(400).json({ error: 'Title, level, and description are required' });
+    }
+
+    if (!['Junior', 'Mid', 'Senior'].includes(level)) {
+      return res.status(400).json({ error: 'Level must be Junior, Mid, or Senior' });
+    }
+
+    const job = new Job({
+      companyId: null, // System course, no company
+      title,
+      level,
+      description,
+      location: location || 'Remote',
+      employmentType: employmentType || 'Full-time',
+      status: 'active',
+      questionConfig: {
+        numQuestions: 5,
+        technicalRatio: 0.6,
+        difficulty: 'mixed',
+      },
+    });
+
+    await job.save();
+
+    res.status(201).json({
+      job: {
+        id: job._id,
+        title: job.title,
+        level: job.level,
+        description: job.description,
+        location: job.location,
+        employmentType: job.employmentType,
+        status: job.status,
+        createdAt: job.createdAt,
+      },
+    });
   } catch (error) {
     next(error);
   }
