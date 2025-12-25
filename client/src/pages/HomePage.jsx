@@ -122,7 +122,7 @@ export default function HomePage() {
 
         <div className="bg-black rounded-lg shadow-xl p-6 border border-white mb-6">
           <p className="text-white mb-4">
-            Access your company dashboard to manage jobs, view applicants, and analyze interview reports.
+            Access your company dashboard to manage jobs, view applicants, and analyze interview reports and have fun.
           </p>
           <Link
             to="/company-dashboard"
